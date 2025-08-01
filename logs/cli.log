@@ -22,3 +22,30 @@
 2025-08-01 17:49:33,663 - interface.cli.commands - ERROR - Failed to import required modules: No module named 'schedule'
 2025-08-01 17:52:47,105 - interface.cli.commands - ERROR - Failed to import required modules: cannot import name 'Orchestrator' from 'engine.orchestrator' (C:\Users\User\desktop\DRN.today\engine\orchestrator.py)
 2025-08-01 18:03:00,351 - interface.cli.commands - ERROR - Failed to import required modules: cannot import name 'EventSystem' from 'engine.event_system' (C:\Users\User\Desktop\DRN.today\engine\event_system.py)
+2025-08-01 18:58:42,588 - interface.cli.commands - ERROR - Failed to import required modules: cannot import name 'EventSystem' from 'engine.event_system' (C:\Users\User\Desktop\DRN.today\engine\event_system.py)
+2025-08-01 19:15:02,845 - interface.cli.commands - ERROR - Failed to import required modules: cannot import name 'Storage' from 'engine.storage' (C:\Users\User\Desktop\DRN.today\engine\storage.py)
+2025-08-01 19:25:26,682 - ai.models - INFO - Initializing AI models...
+2025-08-01 19:25:26,748 - ai.models - WARNING - Model file not found: C:\Users\User\Desktop\DRN.today\ai\models\tinybert\base.bin
+2025-08-01 19:25:26,750 - ai.models - WARNING - Skipping TinyBERT model base - file not found or corrupted
+2025-08-01 19:25:26,752 - ai.models - WARNING - Model file not found: C:\Users\User\Desktop\DRN.today\ai\models\tinybert\entity.bin
+2025-08-01 19:25:26,753 - ai.models - WARNING - Skipping TinyBERT model entity - file not found or corrupted
+2025-08-01 19:25:26,755 - ai.models - WARNING - Model file not found: C:\Users\User\Desktop\DRN.today\ai\models\tinybert\sentiment.bin
+2025-08-01 19:25:26,779 - ai.models - WARNING - Skipping TinyBERT model sentiment - file not found or corrupted
+2025-08-01 19:25:26,792 - ai.models - WARNING - Model file not found: C:\Users\User\Desktop\DRN.today\ai\models\tinybert\intent.bin
+2025-08-01 19:25:26,796 - ai.models - WARNING - Skipping TinyBERT model intent - file not found or corrupted
+2025-08-01 19:25:26,800 - ai.models - WARNING - Model file not found: C:\Users\User\Desktop\DRN.today\ai\models\tinybert\persona.bin
+2025-08-01 19:25:26,804 - ai.models - WARNING - Skipping TinyBERT model persona - file not found or corrupted
+2025-08-01 19:25:26,814 - ai.models - WARNING - Model file not found: C:\Users\User\Desktop\DRN.today\ai\models\scikit\lead_scoring.pkl
+2025-08-01 19:25:26,819 - ai.models - WARNING - Skipping Scikit model lead_scoring - file not found or corrupted
+2025-08-01 19:25:26,821 - ai.models - WARNING - Model file not found: C:\Users\User\Desktop\DRN.today\ai\models\scikit\reply_classifier.pkl
+2025-08-01 19:25:26,824 - ai.models - WARNING - Skipping Scikit model reply_classifier - file not found or corrupted
+2025-08-01 19:25:26,826 - ai.models - WARNING - Model file not found: C:\Users\User\Desktop\DRN.today\ai\models\scikit\conversion_predictor.pkl
+2025-08-01 19:25:26,832 - ai.models - WARNING - Skipping Scikit model conversion_predictor - file not found or corrupted
+2025-08-01 19:25:26,834 - ai.models - WARNING - Model file not found: C:\Users\User\Desktop\DRN.today\ai\models\scikit\category_classifier.pkl
+2025-08-01 19:25:26,835 - ai.models - WARNING - Skipping Scikit model category_classifier - file not found or corrupted
+2025-08-01 19:25:26,838 - ai.models - INFO - AI models initialization completed
+2025-08-01 19:25:26,859 - interface.cli.commands - ERROR - Failed to import required modules: cannot import name 'TinyBERTModel' from 'ai.models.tinybert' (unknown location)
+2025-08-01 21:49:31,287 - ai.models - ERROR - Failed to load TinyBERT model: It looks like the config file at 'C:\Users\User\Desktop\DRN.today\ai\models\tinybert\config.json' is not a valid JSON file.
+2025-08-01 21:49:31,318 - ai.models - ERROR - Model initialization failed: It looks like the config file at 'C:\Users\User\Desktop\DRN.today\ai\models\tinybert\config.json' is not a valid JSON file.
+2025-08-01 21:49:31,334 - ai.models - WARNING - Partial model initialization: It looks like the config file at 'C:\Users\User\Desktop\DRN.today\ai\models\tinybert\config.json' is not a valid JSON file.
+2025-08-01 21:49:31,428 - interface.cli.commands - ERROR - Failed to import required modules: cannot import name 'CompetitiveScraper' from 'modules.competitive_intel.scraper' (C:\Users\User\Desktop\DRN.today\modules\competitive_intel\scraper.py)

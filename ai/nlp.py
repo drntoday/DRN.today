@@ -1,10 +1,3 @@
-#!/usr/bin/env python3
-"""
-DRN.today - Enterprise-Grade Lead Generation Platform
-Natural Language Processing (NLP) Engine
-Production-Ready Implementation
-"""
-
 import os
 import re
 import logging
@@ -100,27 +93,27 @@ class NLPProcessor:
             raise
     
     def _load_tinybert(self):
-        """Load TinyBERT model and tokenizer"""
+        """Load TinyBERT model and tokenizer - modified for your structure"""
         try:
             model_dir = self.model_path / "tinybert"
-            if not model_dir.exists():
-                logger.warning(f"TinyBERT model directory not found: {model_dir}")
+            if not (model_dir / "pytorch_model.bin").exists():
+                logger.warning(f"TinyBERT model file not found in {model_dir}")
                 return
-            
+        
             self.tokenizer = AutoTokenizer.from_pretrained(model_dir)
             self.tinybert_model = AutoModel.from_pretrained(model_dir)
             self.tinybert_model.to(self.device)
             self.tinybert_model.eval()
-            
+        
             self.model_info["tinybert_loaded"] = True
             logger.info("TinyBERT model loaded successfully")
-            
+        
         except Exception as e:
             logger.error(f"Failed to load TinyBERT: {str(e)}", exc_info=True)
             raise
     
     def _load_classification_model(self):
-        """Load TinyBERT classification model"""
+        """Load classification model"""
         try:
             model_dir = self.model_path / "classification"
             if not model_dir.exists():
@@ -139,49 +132,47 @@ class NLPProcessor:
             raise
     
     def _load_spacy(self):
-        """Load spaCy model for entity recognition"""
+        """Load spaCy model with better error handling"""
         try:
+            # Check if spaCy is installed
+            try:
+                import spacy
+            except ImportError:
+                logger.warning("spaCy not installed - entity recognition disabled")
+                return
+            
             # Try to load English model
             try:
                 self.spacy_model = spacy.load("en_core_web_sm")
+                self.model_info["spacy_loaded"] = True
+                logger.info("spaCy model loaded successfully")
             except OSError:
-                # Fallback to basic English model
-                self.spacy_model = spacy.blank("en")
-                logger.warning("Using basic spaCy model - entity recognition may be limited")
-            
-            self.model_info["spacy_loaded"] = True
-            logger.info("spaCy model loaded successfully")
-            
+                logger.warning("spaCy English model not found - run 'python -m spacy download en_core_web_sm'")
         except Exception as e:
-            logger.error(f"Failed to load spaCy: {str(e)}", exc_info=True)
-            raise
+            logger.error(f"spaCy loading error: {str(e)}")
     
     def _load_sklearn_models(self):
-        """Load Scikit-learn models"""
+        """Load Scikit-learn models - adjusted for your files"""
         try:
             sklearn_dir = self.model_path / "scikit"
             if not sklearn_dir.exists():
                 logger.warning(f"Scikit-learn models directory not found: {sklearn_dir}")
                 return
-            
-            # Load intent classifier
-            intent_path = sklearn_dir / "intent_classifier.pkl"
-            if intent_path.exists():
-                self.intent_classifier = joblib.load(intent_path)
-            
-            # Load sentiment analyzer
-            sentiment_path = sklearn_dir / "sentiment_analyzer.pkl"
-            if sentiment_path.exists():
-                self.sentiment_analyzer = joblib.load(sentiment_path)
-            
-            # Load keyword extractor
-            keyword_path = sklearn_dir / "keyword_extractor.pkl"
-            if keyword_path.exists():
-                self.keyword_extractor = joblib.load(keyword_path)
-            
+        
+            # Load classifier (matches your classifier.pkl)
+            classifier_path = sklearn_dir / "classifier.pkl"
+            if classifier_path.exists():
+                self.intent_classifier = joblib.load(classifier_path)
+                logger.info("Loaded classifier model")
+        
+            # Load lead scorer (matches your lead_scorer.pkl)
+            lead_scorer_path = sklearn_dir / "lead_scorer.pkl"
+            if lead_scorer_path.exists():
+                self.sentiment_analyzer = joblib.load(lead_scorer_path)
+                logger.info("Loaded lead scoring model")
+        
             self.model_info["sklearn_loaded"] = True
-            logger.info("Scikit-learn models loaded successfully")
-            
+        
         except Exception as e:
             logger.error(f"Failed to load Scikit-learn models: {str(e)}", exc_info=True)
             raise
@@ -323,10 +314,19 @@ class NLPProcessor:
             return sentiment
     
     def detect_intent(self, text: str) -> Tuple[str, float]:
-        """Detect user intent from text"""
+        """Detect user intent from text - simplified for your models"""
         try:
-            # Try TinyBERT first
-            if self.classification_model and self.tokenizer:
+            # Use your classifier.pkl model
+            if self.intent_classifier:
+                preprocessed = self.preprocess_text(text)
+                intent = self.intent_classifier.predict([preprocessed])[0]
+                probs = self.intent_classifier.predict_proba([preprocessed])[0]
+                confidence = float(np.max(probs))
+                
+                return intent, confidence
+            
+            # Fallback to TinyBERT if no classifier
+            elif self.tinybert_model and self.tokenizer:
                 inputs = self.tokenizer(
                     text,
                     return_tensors="pt",
@@ -336,65 +336,55 @@ class NLPProcessor:
                 ).to(self.device)
                 
                 with torch.no_grad():
-                    outputs = self.classification_model(**inputs)
-                    logits = outputs.logits
-                    probs = torch.softmax(logits, dim=1).cpu().numpy()[0]
-                
-                intent_labels = ["information", "purchase", "support", "complaint", "feedback"]
-                intent_idx = np.argmax(probs)
-                confidence = float(probs[intent_idx])
-                
-                return intent_labels[intent_idx], confidence
-            
-            # Fallback to Scikit-learn
-            elif self.intent_classifier:
-                preprocessed = self.preprocess_text(text)
-                intent = self.intent_classifier.predict([preprocessed])[0]
-                probs = self.intent_classifier.predict_proba([preprocessed])[0]
-                confidence = float(np.max(probs))
-                
-                return intent, confidence
+                    outputs = self.tinybert_model(**inputs)
+                    # Add your custom intent classification logic here
+                    # This is just a placeholder
+                    return "information", 0.7
             
             # Rule-based fallback
             else:
-                text_lower = text.lower()
-                
-                # Buying signals
-                buying_patterns = [
-                    r"looking for",
-                    r"need.*service",
-                    r"recommend.*tool",
-                    r"interested in",
-                    r"want to buy",
-                    r"pricing",
-                    r"cost",
-                    r"how much"
-                ]
-                
-                for pattern in buying_patterns:
-                    if re.search(pattern, text_lower):
-                        return "purchase", 0.8
-                
-                # Support patterns
-                support_patterns = [
-                    r"help",
-                    r"issue",
-                    r"problem",
-                    r"broken",
-                    r"not working",
-                    r"error"
-                ]
-                
-                for pattern in support_patterns:
-                    if re.search(pattern, text_lower):
-                        return "support", 0.8
-                
-                # Default to information
-                return "information", 0.5
+                return self._rule_based_intent(text)
                 
         except Exception as e:
             logger.error(f"Error detecting intent: {str(e)}", exc_info=True)
             return "unknown", 0.0
+    
+    def _rule_based_intent(self, text: str) -> Tuple[str, float]:
+        """Rule-based intent detection fallback"""
+        text_lower = text.lower()
+        
+        # Buying signals
+        buying_patterns = [
+            r"looking for",
+            r"need.*service",
+            r"recommend.*tool",
+            r"interested in",
+            r"want to buy",
+            r"pricing",
+            r"cost",
+            r"how much"
+        ]
+        
+        for pattern in buying_patterns:
+            if re.search(pattern, text_lower):
+                return "purchase", 0.8
+        
+        # Support patterns
+        support_patterns = [
+            r"help",
+            r"issue",
+            r"problem",
+            r"broken",
+            r"not working",
+            r"error"
+        ]
+        
+        for pattern in support_patterns:
+            if re.search(pattern, text_lower):
+                return "support", 0.8
+        
+        # Default to information
+        return "information", 0.5
     
     def extract_keywords(self, text: str, max_keywords: int = 10) -> List[str]:
         """Extract keywords from text"""
@@ -609,12 +599,16 @@ class NLPProcessor:
             return False
     
     def get_model_info(self) -> Dict[str, Any]:
-        """Get information about loaded models"""
+        """Get information about loaded models - simplified"""
         return {
-            **self.model_info,
+            "tinybert_loaded": self.model_info["tinybert_loaded"],
+            "sklearn_loaded": self.model_info["sklearn_loaded"],
+            "spacy_loaded": self.model_info["spacy_loaded"],
             "device": str(self.device),
-            "model_path": str(self.model_path),
-            "tinybert_model": str(self.tinybert_model.__class__.__name__) if self.tinybert_model else None,
-            "classification_model": str(self.classification_model.__class__.__name__) if self.classification_model else None,
-            "spacy_model": str(self.spacy_model.__class__.__name__) if self.spacy_model else None
+            "models": {
+                "tinybert": str(self.tinybert_model.__class__.__name__) if self.tinybert_model else None,
+                "classifier": str(self.intent_classifier.__class__.__name__) if self.intent_classifier else None,
+                "lead_scorer": str(self.sentiment_analyzer.__class__.__name__) if self.sentiment_analyzer else None,
+                "spacy": str(self.spacy_model.__class__.__name__) if self.spacy_model else None
+            }
         }

@@ -11,8 +11,8 @@ from enum import Enum
 
 # Local imports matching project structure
 from engine.orchestrator import SystemOrchestrator
-from engine.event_system import EventSystem, Event, EventPriority
-from engine.storage import Storage
+from engine.event_system import EventBus, Event, EventPriority
+from engine.storage import SecureStorage
 from ai.models.tinybert import TinyBERTModel
 from ai.nlp import NLPProcessor
 from modules.competitive_intel.scraper import CompetitiveScraper
@@ -136,7 +136,7 @@ class CompetitiveMonitor:
     in their social presence, pricing, landing pages, job postings, and ads.
     """
     
-    def __init__(self, orchestrator: SystemOrchestrator, storage: SecureStorage, event_system: EventSystem):
+    def __init__(self, orchestrator: SystemOrchestrator, storage: SecureStorage, event_system: EventBus):
         self.orchestrator = SystemOrchestrator
         self.storage = SecureStorage
         self.event_system = event_system
