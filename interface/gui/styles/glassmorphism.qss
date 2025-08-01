@@ -1,0 +1,230 @@
+"""
+Glassmorphism QSS Stylesheet for DRN.today
+"""
+
+QSS_STYLES = """
+/* Main Application */
+QMainWindow {
+    background-color: #0f0f1e;
+    color: #e0e0ff;
+}
+
+/* Glass Frame Base */
+GlassFrame {
+    background-color: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+}
+
+/* Sidebar */
+Sidebar {
+    background-color: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+}
+
+NavList {
+    background: transparent;
+    outline: 0;
+}
+
+NavItem {
+    background: transparent;
+    border: none;
+    border-radius: 12px;
+    padding: 12px 16px;
+    color: #a0a0c0;
+    text-align: left;
+}
+
+NavItem:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+NavItem[active="true"] {
+    background: rgba(108, 99, 255, 0.2);
+    border-left: 3px solid #6c63ff;
+    color: #e0e0ff;
+}
+
+/* Welcome Banner */
+WelcomeBanner {
+    background: linear-gradient(135deg, rgba(108, 99, 255, 0.2), rgba(72, 219, 251, 0.2));
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+}
+
+/* Buttons */
+QPushButton {
+    background: linear-gradient(135deg, #6c63ff, #48dbfb);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    padding: 10px 20px;
+    font-weight: 600;
+    font-size: 14px;
+}
+
+QPushButton[flat="true"] {
+    background: rgba(255, 255, 255, 0.1);
+    color: #e0e0ff;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+QPushButton:hover {
+    transform: translateY(-2px);
+}
+
+/* Stat Cards */
+StatCard {
+    background-color: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+}
+
+StatIcon {
+    background: rgba(108, 99, 255, 0.2);
+    color: #6c63ff;
+    border-radius: 16px;
+}
+
+StatIcon[type="email"] {
+    background: rgba(72, 219, 251, 0.2);
+    color: #48dbfb;
+}
+
+StatIcon[type="open"] {
+    background: rgba(29, 209, 161, 0.2);
+    color: #1dd1a1;
+}
+
+StatIcon[type="response"] {
+    background: rgba(254, 202, 87, 0.2);
+    color: #feca57;
+}
+
+/* Activity Items */
+ActivityItem {
+    background-color: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+}
+
+ActivityIcon {
+    border-radius: 12px;
+}
+
+ActivityIcon[type="success"] {
+    background: rgba(29, 209, 161, 0.2);
+    color: #1dd1a1;
+}
+
+ActivityIcon[type="info"] {
+    background: rgba(72, 219, 251, 0.2);
+    color: #48dbfb;
+}
+
+ActivityIcon[type="warning"] {
+    background: rgba(254, 202, 87, 0.2);
+    color: #feca57;
+}
+
+/* Campaign Cards */
+CampaignCard {
+    background-color: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+}
+
+CampaignStatus {
+    background: rgba(29, 209, 161, 0.2);
+    color: #1dd1a1;
+    border-radius: 20px;
+    padding: 4px 12px;
+    font-weight: 600;
+}
+
+ProgressBar {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    height: 8px;
+}
+
+ProgressFill {
+    background: linear-gradient(90deg, #6c63ff, #48dbfb);
+    border-radius: 4px;
+}
+
+/* Text Elements */
+QLabel {
+    color: #e0e0ff;
+    font-family: 'Inter';
+}
+
+QLabel[heading="true"] {
+    font-size: 24px;
+    font-weight: 600;
+}
+
+QLabel[subheading="true"] {
+    font-size: 18px;
+    font-weight: 500;
+}
+
+QLabel[caption="true"] {
+    color: #a0a0c0;
+    font-size: 14px;
+}
+
+QLabel[highlight="true"] {
+    color: #48dbfb;
+    font-weight: 600;
+}
+
+/* Inputs */
+QLineEdit {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 30px;
+    padding: 10px 20px;
+    color: #e0e0ff;
+    font-size: 14px;
+}
+
+/* Scrollbars */
+QScrollBar:vertical {
+    background: rgba(255, 255, 255, 0.05);
+    border: none;
+    border-radius: 8px;
+    width: 12px;
+    margin: 0;
+}
+
+QScrollBar::handle:vertical {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 6px;
+    min-height: 30px;
+}
+
+QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+    height: 0;
+}
+
+QScrollBar:horizontal {
+    background: rgba(255, 255, 255, 0.05);
+    border: none;
+    border-radius: 8px;
+    height: 12px;
+    margin: 0;
+}
+
+QScrollBar::handle:horizontal {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 6px;
+    min-width: 30px;
+}
+
+QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {
+    width: 0;
+}
+"""
