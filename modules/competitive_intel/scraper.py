@@ -22,8 +22,8 @@ from engine.orchestrator import SystemOrchestrator
 from engine.event_system import EventBus, Event, EventPriority
 from ai.models.tinybert import TinyBERTModel
 from ai.nlp import NLPProcessor
-from modules.web_crawlers.retry_logic import RetryLogic
-from modules.web_crawlers.self_healing import DOMSelfHealing
+from modules.web_crawlers.retry_logic import RetryStrategy
+from modules.web_crawlers.self_healing import DOMSelfHealingEngine
 from modules.compliance.restrictions import GeoRestrictions
 
 
@@ -91,8 +91,8 @@ class CompetitiveScraper:
         self.nlp = NLPProcessor()
         
         # Initialize helper components
-        self.retry_logic = RetryLogic()
-        self.dom_healing = DOMSelfHealing(self.tinybert)
+        self.retry_logic = RetryStrategy()
+        self.dom_healing = DOMSelfHealingEngine(self.tinybert)
         self.geo_restrictions = GeoRestrictions()
         
         # Browser configuration

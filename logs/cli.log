@@ -61,3 +61,38 @@
 2025-08-01 22:19:13,236 - ai.models - ERROR - Model initialization failed: Unable to load weights from pytorch checkpoint file for 'C:\Users\User\Desktop\DRN.today\ai\models\tinybert\pytorch_model.bin' at 'C:\Users\User\Desktop\DRN.today\ai\models\tinybert\pytorch_model.bin'. If you tried to load a PyTorch model from a TF 2.0 checkpoint, please set from_tf=True.
 2025-08-01 22:19:13,236 - ai.models - WARNING - Partial model initialization: Unable to load weights from pytorch checkpoint file for 'C:\Users\User\Desktop\DRN.today\ai\models\tinybert\pytorch_model.bin' at 'C:\Users\User\Desktop\DRN.today\ai\models\tinybert\pytorch_model.bin'. If you tried to load a PyTorch model from a TF 2.0 checkpoint, please set from_tf=True.
 2025-08-01 22:19:16,895 - interface.cli.commands - ERROR - Failed to import required modules: cannot import name 'RetryLogic' from 'modules.web_crawlers.retry_logic' (C:\Users\User\Desktop\DRN.today\modules\web_crawlers\retry_logic.py)
+2025-08-01 22:39:43,550 - ai.models - INFO - Loaded TinyBERT model from C:\Users\User\Desktop\DRN.today\ai\models\tinybert
+2025-08-01 22:39:44,722 - ai.models - INFO - Loaded scikit-learn model: classifier
+2025-08-01 22:39:45,036 - ai.models - INFO - Loaded scikit-learn model: lead_scorer
+2025-08-01 22:39:45,036 - ai.models - INFO - All models initialized successfully
+2025-08-01 22:39:45,198 - interface.cli.commands - ERROR - Failed to import required modules: cannot import name 'DOMSelfHealing' from 'modules.web_crawlers.self_healing' (C:\Users\User\Desktop\DRN.today\modules\web_crawlers\self_healing.py)
+2025-08-01 22:59:41,176 - ai.models - INFO - Loaded TinyBERT model from C:\Users\User\Desktop\DRN.today\ai\models\tinybert
+2025-08-01 22:59:41,364 - ai.models - INFO - Loaded scikit-learn model: classifier
+2025-08-01 22:59:41,442 - ai.models - INFO - Loaded scikit-learn model: lead_scorer
+2025-08-01 22:59:41,442 - ai.models - INFO - All models initialized successfully
+2025-08-01 22:59:41,692 - interface.cli.commands - ERROR - Failed to import required modules: cannot import name 'GeoRestrictions' from 'modules.compliance.restrictions' (C:\Users\User\Desktop\DRN.today\modules\compliance\restrictions.py)
+2025-08-01 23:56:06,098 - ai.models - INFO - Loaded TinyBERT model from C:\Users\User\Desktop\DRN.today\ai\models\tinybert
+2025-08-01 23:56:06,260 - ai.models - INFO - Loaded scikit-learn model: classifier
+2025-08-01 23:56:06,322 - ai.models - INFO - Loaded scikit-learn model: lead_scorer
+2025-08-01 23:56:06,323 - ai.models - INFO - All models initialized successfully
+2025-08-01 23:56:06,418 - interface.cli.commands - ERROR - Failed to import required modules: cannot import name 'GeoRestrictions' from 'modules.compliance.restrictions' (C:\Users\User\Desktop\DRN.today\modules\compliance\restrictions.py)
+2025-08-02 00:04:39,755 - ai.models - INFO - Loaded TinyBERT model from C:\Users\User\Desktop\DRN.today\ai\models\tinybert
+2025-08-02 00:04:39,927 - ai.models - INFO - Loaded scikit-learn model: classifier
+2025-08-02 00:04:39,973 - ai.models - INFO - Loaded scikit-learn model: lead_scorer
+2025-08-02 00:04:39,973 - ai.models - INFO - All models initialized successfully
+2025-08-02 00:04:40,083 - interface.cli.commands - ERROR - Failed to import required modules: cannot import name 'GeoRestrictions' from 'modules.compliance.restrictions' (C:\Users\User\Desktop\DRN.today\modules\compliance\restrictions.py)
+2025-08-02 00:11:32,985 - ai.models - INFO - Loaded TinyBERT model from C:\Users\User\Desktop\DRN.today\ai\models\tinybert
+2025-08-02 00:11:33,141 - ai.models - INFO - Loaded scikit-learn model: classifier
+2025-08-02 00:11:33,203 - ai.models - INFO - Loaded scikit-learn model: lead_scorer
+2025-08-02 00:11:33,203 - ai.models - INFO - All models initialized successfully
+2025-08-02 00:11:33,375 - interface.cli.commands - ERROR - Failed to import required modules: cannot import name 'Storage' from 'engine.storage' (C:\Users\User\Desktop\DRN.today\engine\storage.py)
+2025-08-02 00:16:20,629 - ai.models - INFO - Loaded TinyBERT model from C:\Users\User\Desktop\DRN.today\ai\models\tinybert
+2025-08-02 00:16:20,676 - ai.models - INFO - Loaded scikit-learn model: classifier
+2025-08-02 00:16:20,707 - ai.models - INFO - Loaded scikit-learn model: lead_scorer
+2025-08-02 00:16:20,723 - ai.models - INFO - All models initialized successfully
+2025-08-02 00:16:20,847 - interface.cli.commands - ERROR - Failed to import required modules: cannot import name 'CompetitorMonitor' from 'modules.competitive_intel.monitor' (C:\Users\User\Desktop\DRN.today\modules\competitive_intel\monitor.py)
+2025-08-02 00:27:25,272 - ai.models - INFO - Loaded TinyBERT model from C:\Users\User\Desktop\DRN.today\ai\models\tinybert
+2025-08-02 00:27:25,413 - ai.models - INFO - Loaded scikit-learn model: classifier
+2025-08-02 00:27:25,475 - ai.models - INFO - Loaded scikit-learn model: lead_scorer
+2025-08-02 00:27:25,475 - ai.models - INFO - All models initialized successfully
+2025-08-02 00:27:25,647 - interface.cli.commands - ERROR - Failed to import required modules: cannot import name 'IntentTracker' from 'modules.intent_engine.tracker' (C:\Users\User\Desktop\DRN.today\modules\intent_engine\tracker.py)

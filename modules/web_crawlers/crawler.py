@@ -1,10 +1,3 @@
-#!/usr/bin/env python3
-"""
-DRN.today - Enterprise-Grade Lead Generation Platform
-Self-Adaptive Web Crawlers Module
-Production-Ready Implementation
-"""
-
 import asyncio
 import logging
 import time

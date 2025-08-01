@@ -128,7 +128,7 @@ class CompetitorState:
             self.ads = []
 
 
-class CompetitiveMonitor:
+class CompetitorMonitor:
     """
     Competitive Intelligence Monitor
     

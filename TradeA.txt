@@ -1,0 +1,228 @@
+This project will deliver a fully-featured, enterprise-grade desktop application named DRN.today, designed to run seamlessly across all major operating systems including Windows, Linux, and macOS, with all processing occurring locally on the user's machine. It will contain no test code, no boilerplate, and absolutely no partial implementations. The architecture will be modular and pre-planned, with all folders, modules, and advanced features defined and developed independently from the start. The central main.py or dashboard entry point will act solely as a feature orchestrator, embedding modules without containing any business logic. Each module will be a self-contained unit, handling its own GUI, internal engine, state, error management, and persistence independently.
+
+DRN.today will offer industry-leading capabilities not available in any existing commercial solution, particularly in the area of automated lead generation and outreach, including:
+
+🔥 Unrivaled AI-Powered Lead Generation Engine
+
+Multi-platform scraping from Google, Yahoo, DuckDuckGo, Yandex, LinkedIn, Discord, Telegram, Reddit, forums, app stores, GitHub, Crunchbase, AngelList, Product Hunt, newsletters, and more
+WHOIS & DNS-based email mining, startup funding monitors, newsletter author crawlers, and Chrome extension data capture
+Dynamic adapter architecture for pluggable sources, powered by Playwright with TinyBERT-based DOM self-healing and adapter chaining
+Multi-hop crawling with smart retries, proxy support, CAPTCHA solving with OpenCV, and failure auto-patching
+Language-agnostic smart extraction of names, emails, phones, companies, social links, locations, and contextual keywords
+Built-in TinyBERT NLP for scoring, category labeling, relevance filtering, and buyer persona detection
+A GUI-based Adapter Builder to convert custom JSON rules into working Python crawlers without code
+🧠 Deep Lead Enrichment & AI-Based Persona Stitching
+
+Cross-platform identity resolution using domain, name, role, and social footprint
+AI-inferred insights such as job seniority, budget range, urgency, industry fit, and authority level using TinyBERT
+DNA-style lead tagging system for targeting leads by multi-dimensional traits
+Custom persona segmentation (e.g., "CTOs in FinTech startups with Series A funding")
+💬 High-Intent Conversation Mining
+
+Real-time monitoring of forums, Discord, Reddit, Telegram, and comment sections
+NLP-driven detection of buying signals (e.g., "looking for", "need service", "recommend a tool") using TinyBERT
+Thread classification, contextual extraction, and cluster scoring based on lead urgency
+🛠️ Self-Adaptive, Multi-Stage Web Crawlers
+
+Fully autonomous crawlers that self-heal using TinyBERT DOM-mapping if selectors break
+Multi-layered crawling (source > result > landing > social > enrichment)
+Smart retry logic, user-agent spoofing, and rate-limit awareness built-in
+📩 Passive Lead Capture & Lead Magnet Generators
+
+Auto-generated SEO blog network publishing niche content with lead CTAs using GPT-2
+Public tool repositories, GitHub projects, and gated downloads to capture leads
+Deployable Chrome extensions that log anonymous leads and usage-based context
+📊 Competitive Intelligence Engine
+
+Monitor and scrape competitor followers across social platforms
+Track pricing, landing pages, and job board changes
+Watch Google Ads/PPC campaigns and extract contact points from sponsored links
+🌐 Truly Universal Email & SMTP Compatibility
+
+Full SMTP integration with Gmail, Outlook, Mailgun, SendGrid, Amazon SES, Postfix, and more
+Secure keyring-based credential storage and SMTP pool rotation logic
+Real-time blacklist monitoring and warming automation
+📬 Smart IMAP + Bounce Management
+
+Works with any IMAP provider
+ML-based reply classification (positive, neutral, spam, bounced) using Scikit-learn and TinyBERT
+Bounce removal and automatic lead rescore system
+💡 Live Intent Engine & Heatmaps
+
+Tracks opens, clicks, re-engagement, scroll depth, and dwell time
+AI recommends best next outreach strategy based on behavioral signals using TinyBERT
+Generates visual heatmaps per industry and per campaign
+📝 AI-Driven Email Template Engine
+
+Jinja2-powered, context-aware templates adapting tone and structure to each lead
+Website-aware personalization, follow-up sequences, and smart merge logic
+A/B testing support with conditional branching and lead flow tracking
+🔌 Integrations via Webhooks & REST API
+
+One-click sync with Notion, Airtable, Slack, CRMs, Zapier, and custom tools
+Data exports supported in CSV, Excel, JSON, SQLite, and live Webhook streaming
+Local webhook server for real-time integrations without external dependencies
+🖥️ Multi-Mode Operation
+
+PyQt5 GUI interface for full feature control
+Command-line batch runner for headless servers
+Background daemon with watchdogs and dynamic scheduling
+🔒 Licensing, Subscriptions & Access Control
+
+Offline-ready license key validation with expiration and role-based features
+Role tiers: Admin, Standard, and Trial
+Optional billing integration with Stripe or Paddle
+SaaS Pricing Model:
+First 300 leads are free
+Thereafter, billed at $1.8 per 180 leads generated, pay-as-you-go
+🚀 True Cross-Platform Packaging & Deployment
+
+Full bundling for Windows (.exe), macOS (.app), and Linux (.AppImage, .deb)
+PyInstaller, Briefcase, or Nuitka for one-file or directory-based deployment
+Includes all internal resources: plugins, templates, icons, and pretrained TinyBERT models
+🧠 AI Lead Scoring Engine
+
+ML models continuously evaluate leads based on 20+ signals using Scikit-learn and TinyBERT
+Predicts conversion probability and campaign responsiveness
+Allows automatic filtering or retargeting based on predicted value
+🛒 Lead Pack Marketplace
+
+Built-in store for downloading or creating lead generation packs
+Industry-targeted scraping adapters, ready-to-run campaign blueprints, and enrichment logic
+Enables new monetization or sharing models via community contributions
+🛡️ GDPR, CCPA, and Data Ethics Support
+
+Geo-aware scraping restrictions
+Built-in opt-out flows and data retention rules
+Source-level blacklisting and scraping compliance logic
+
+All AI processing occurs locally using TinyBERT, Scikit-learn, and other open-source models, ensuring complete privacy, offline functionality, and zero API costs. The application is designed to work without internet connectivity for core features, with optional online capabilities for integrations and updates.
+
+//////////////////////////////////////////////////////////////////////
+
+DRN.today/
+├── README.md
+├── requirements.txt
+│ 
+├── .github/                    
+│   └── workflows/      
+│        └── ci.yml
+│            
+├── .gitignore
+│
+├── 🏠 home/                      # Core application entry point
+│   ├── main.py                   # Application orchestrator 
+│   ├── app.py                    # Application initialization
+│   └── config.py                 # Global configuration
+│
+├── 🔧 engine/                    # Core processing engine
+│   ├── orchestrator.py           # Central module coordinator
+│   ├── event_system.py           # Inter-module communication
+│   ├── storage.py                # Local data persistence
+│   └── license.py                # Licensing & access control
+│
+├── 🧩 modules/                   # Feature modules 
+│   ├── 🎯 lead_generation/       # Lead generation features
+│   │   ├── scraper.py            # Multi-platform scraping
+│   │   ├── adapter_builder.py    # GUI adapter builder
+│   │   └── email_miner.py        # WHOIS & DNS mining
+│   │
+│   ├── 💎 lead_enrichment/       # Lead enrichment features
+│   │   ├── persona_stitcher.py   # Cross-platform identity resolution
+│   │   ├── tagging.py            # DNA-style lead tagging
+│   │   └── insights.py           # AI-inferred insights
+│   │
+│   ├── 💬 conversation_mining/   # Conversation mining features
+│   │   ├── monitor.py            # Real-time monitoring
+│   │   ├── intent_detector.py    # NLP buying signal detection
+│   │   │
+│   │   ├── default_training_examples.py
+│   │   │
+│   │   └── classifier.py         # Thread classification
+│   │
+│   ├── 🕷️ web_crawlers/          # Self-adaptive crawlers
+│   │   ├── crawler.py            # Autonomous crawler
+│   │   ├── self_healing.py       # TinyBERT DOM-mapping
+│   │   └── retry_logic.py        # Smart retry system
+│   │
+│   ├── 📩 lead_capture/          # Passive lead capture
+│   │   ├── content_generator.py  # SEO blog network
+│   │   ├── tools.py              # Public tool repositories
+│   │   └── extension.py          # Chrome extension
+│   │
+│   ├── 🔍 competitive_intel/     # Competitive intelligence
+│   │   ├── monitor.py            # Competitor tracking
+│   │   ├── scraper.py            # Pricing & landing page scraping
+│   │   └── ad_tracker.py         # Google Ads monitoring
+│   │
+│   ├── 📧 email_system/          # Email & SMTP system
+│   │   ├── smtp_manager.py       # SMTP integration
+│   │   ├── imap_manager.py       # IMAP processing
+│   │   └── bounce_detector.py    # Bounce detection
+│   │
+│   ├── 📈 intent_engine/         # Live intent tracking
+│   │   ├── tracker.py            # Behavior tracking
+│   │   ├── heatmap.py            # Visual heatmaps
+│   │   └── recommender.py        # AI recommendations
+│   │
+│   ├── 📝 template_engine/       # Email template system
+│   │   ├── templates.py          # Jinja2 template engine
+│   │   ├── personalizer.py       # Website-aware personalization
+│   │   └── ab_testing.py         # A/B testing support
+│   │
+│   ├── 🔌 integrations/          # Third-party integrations
+│   │   ├── webhooks.py           # Webhook server
+│   │   ├── api.py                # REST API
+│   │   └── sync.py               # Third-party sync
+│   │
+│   ├── 🛒 marketplace/           # Lead pack marketplace
+│   │   ├── store.py              # Marketplace logic
+│   │   ├── packs.py              # Lead generation packs
+│   │   └── community.py          # Community contributions
+│   │
+│   └── 🛡️ compliance/            # GDPR & compliance
+│       ├── restrictions.py       # Geo-aware scraping restrictions
+│       ├── opt_out.py            # Opt-out flows
+│       └── retention.py          # Data retention rules
+│
+├── 🤖 ai/                        # AI/ML components
+│   ├── models/                   # Pretrained models
+│   │   ├── __init__.py
+│   │   ├── tinybert/             # TinyBERT models
+│   │   └── scikit/               # Scikit-learn models
+│   ├── nlp.py                    # NLP processing engine
+│   ├── scoring.py                # Lead scoring system
+│   └── classification.py         # Text classification
+│
+├── 🖥️ interface/                 # User interfaces
+│   ├── gui/                      # PyQt5 GUI
+│   │   ├── main_window.py        # Main application window
+│   │   ├── dashboard.py          # Dashboard view
+│   │   ├── components/           # Reusable GUI components
+│   │   │   ├── glass_frame.py    # Custom glass frame widget
+│   │   │   ├── sidebar.py        # Sidebar widget
+│   │   │   ├── stat_card.py      # Statistics card widget
+│   │   │   ├── activity_item.py  # Activity list item
+│   │   │   ├── campaign_card.py  # Campaign card widget
+│   │   │   └── welcome_banner.py # Welcome banner widget
+│   │   ├── styles/               # GUI stylesheets
+│   │   │   └── glassmorphism.qss # Main stylesheet
+│   │   └── resources/            # GUI-specific resources
+│   │       └── icons/            # Icons for GUI
+│   │
+│   └── cli/                      # Command-line interface
+│       ├── main.py               # CLI entry point
+│       └── commands.py           # CLI commands
+├── scripts/                 
+│   └── download_models.py
+│ 
+├── 📦 resources/                 # Static resources
+│   ├── templates/                # Email templates
+│   ├── icons/                    # UI icons
+│   ├── adapters/                 # Pre-built adapters
+│   └── styles/                   # GUI stylesheets
+│
+└── 🚀 deploy/                    # Packaging & deployment
+    ├── windows/                  # Windows packaging
+    ├── macos/                    # macOS packaging
+    └── linux/                    # Linux packaging
