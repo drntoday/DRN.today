@@ -19,6 +19,13 @@ jobs:
       uses: actions/checkout@v4
       with:
         fetch-depth: 0  # Full history for better analysis
+
+    - name: Show project structure (debug)
+      run: |
+        echo "Project root structure:"
+        ls -alh
+        echo "Python version:"
+        python --version
     
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v4
