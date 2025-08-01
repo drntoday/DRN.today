@@ -1,10 +1,3 @@
-#!/usr/bin/env python3
-"""
-DRN.today - Enterprise-Grade Lead Generation Platform
-Module Orchestrator System
-Production-Ready Implementation
-"""
-
 import os
 import sys
 import importlib
@@ -110,7 +103,7 @@ class BaseModule:
         """Perform module-specific maintenance"""
         pass
 
-class ModuleOrchestrator:
+class SystemOrchestrator:
     """Production-ready module orchestration system"""
     
     def __init__(self, event_bus: EventBus, storage: SecureStorage, 

@@ -1,10 +1,3 @@
-#!/usr/bin/env python3
-"""
-DRN.today - Enterprise-Grade Lead Generation Platform
-Event System for Inter-Module Communication
-Production-Ready Implementation
-"""
-
 import threading
 import queue
 import logging

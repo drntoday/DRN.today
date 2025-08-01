@@ -1,10 +1,3 @@
-#!/usr/bin/env python3
-"""
-DRN.today - Enterprise-Grade Lead Generation Platform
-Application Initialization System
-Production-Ready Implementation
-"""
-
 import sys
 import os
 import logging
@@ -13,7 +6,7 @@ from pathlib import Path
 from typing import Optional
 
 # Core engine imports
-from engine.orchestrator import ModuleOrchestrator
+from engine.orchestrator import SystemOrchestrator
 from engine.event_system import EventBus
 from engine.storage import SecureStorage
 from engine.license import LicenseManager
@@ -32,7 +25,7 @@ class DRNApplication:
         self.event_bus: Optional[EventBus] = None
         self.storage: Optional[SecureStorage] = None
         self.license_manager: Optional[LicenseManager] = None
-        self.orchestrator: Optional[ModuleOrchestrator] = None
+        self.orchestrator: Optional[SystemOrchestrator] = None
         self._shutdown_initiated = False
         
         # Setup signal handlers for graceful shutdown
@@ -73,8 +66,8 @@ class DRNApplication:
                 logger.critical("Event system initialization failed")
                 return False
                 
-            # 5. Initialize module orchestrator
-            self.orchestrator = ModuleOrchestrator(
+            # 5. Initialize System orchestrator
+            self.orchestrator = SystemOrchestrator(
                 event_bus=self.event_bus,
                 storage=self.storage,
                 license_manager=self.license_manager

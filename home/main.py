@@ -11,9 +11,9 @@ sys.path.insert(0, str(project_root))
 
 from engine.orchestrator import SystemOrchestrator
 from engine.license import LicenseManager
-from engine.event_system import EventSystem
+from engine.event_system import EventBus
 from engine.storage import SecureStorage
-from interface.gui.app import DRNApplication
+from home.app import DRNApplication
 from interface.cli.main import CLIInterface
 from modules.compliance.restrictions import GeoCompliance
 from ai.models import ModelManager
@@ -34,7 +34,7 @@ class DRNMain:
     def __init__(self):
         self.orchestrator: Optional[SystemOrchestrator] = None
         self.license_manager: Optional[LicenseManager] = None
-        self.event_system: Optional[EventSystem] = None
+        self.event_system: Optional[EventBus] = None
         self.storage: Optional[SecureStorage] = None
         self.model_manager: Optional[ModelManager] = None
         self.geo_compliance: Optional[GeoCompliance] = None
@@ -49,7 +49,7 @@ class DRNMain:
             logger.info("✓ Secure storage initialized")
             
             # Initialize event system
-            self.event_system = EventSystem()
+            self.event_system = EventBus()
             logger.info("✓ Event system initialized")
             
             # Initialize license manager
