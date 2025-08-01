@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 import uuid
 
-from engine.storage import Storage
+from engine.SecureStorage import SecureStorage
 from ai.nlp import NLPProcessor
 
 
@@ -64,8 +64,8 @@ class DataRetentionPolicy:
 
 
 class OptOutManager:
-    def __init__(self, storage: Storage, nlp_processor: NLPProcessor):
-        self.storage = storage
+    def __init__(self, SecureStorage: SecureStorage, nlp_processor: NLPProcessor):
+        self.SecureStorage = SecureStorage
         self.nlp = nlp_processor
         self.logger = logging.getLogger("opt_out_manager")
         self.logger.setLevel(logging.INFO)
@@ -95,7 +95,7 @@ class OptOutManager:
 
     def _initialize_tables(self):
         """Initialize database tables if they don't exist"""
-        self.storage.execute("""
+        self.SecureStorage.execute("""
         CREATE TABLE IF NOT EXISTS opt_out_requests (
             id TEXT PRIMARY KEY,
             identifier TEXT NOT NULL,
@@ -111,7 +111,7 @@ class OptOutManager:
         )
         """)
 
-        self.storage.execute("""
+        self.SecureStorage.execute("""
         CREATE TABLE IF NOT EXISTS data_retention_policies (
             id TEXT PRIMARY KEY,
             name TEXT NOT NULL,
@@ -125,7 +125,7 @@ class OptOutManager:
         )
         """)
 
-        self.storage.execute("""
+        self.SecureStorage.execute("""
         CREATE TABLE IF NOT EXISTS compliance_audit_log (
             id TEXT PRIMARY KEY,
             action TEXT NOT NULL,
@@ -140,9 +140,9 @@ class OptOutManager:
         """)
 
     def _load_opt_out_data(self):
-        """Load opt-out requests and retention policies from storage"""
+        """Load opt-out requests and retention policies from SecureStorage"""
         # Load opt-out requests
-        for row in self.storage.query("SELECT * FROM opt_out_requests"):
+        for row in self.SecureStorage.query("SELECT * FROM opt_out_requests"):
             request = OptOutRequest(
                 id=row['id'],
                 identifier=row['identifier'],
@@ -159,7 +159,7 @@ class OptOutManager:
             self.opt_out_requests[request.id] = request
         
         # Load retention policies
-        for row in self.storage.query("SELECT * FROM data_retention_policies WHERE is_active = 1"):
+        for row in self.SecureStorage.query("SELECT * FROM data_retention_policies WHERE is_active = 1"):
             policy = DataRetentionPolicy(
                 id=row['id'],
                 name=row['name'],
@@ -207,7 +207,7 @@ class OptOutManager:
 
     def _save_opt_out_request(self, request: OptOutRequest):
         """Save an opt-out request to database"""
-        self.storage.execute(
+        self.SecureStorage.execute(
             """
             INSERT OR REPLACE INTO opt_out_requests 
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -338,13 +338,13 @@ class OptOutManager:
     def _apply_email_opt_out(self, email: str):
         """Apply email opt-out"""
         # Update leads table
-        self.storage.execute(
+        self.SecureStorage.execute(
             "UPDATE leads SET email_opt_out = 1 WHERE email = ?",
             (email,)
         )
         
         # Update any campaign-specific opt-out tables
-        self.storage.execute(
+        self.SecureStorage.execute(
             "UPDATE email_campaign_recipients SET opt_out = 1 WHERE email = ?",
             (email,)
         )
@@ -352,7 +352,7 @@ class OptOutManager:
     def _apply_phone_opt_out(self, phone: str):
         """Apply phone opt-out"""
         # Update leads table
-        self.storage.execute(
+        self.SecureStorage.execute(
             "UPDATE leads SET phone_opt_out = 1 WHERE phone = ?",
             (phone,)
         )
@@ -360,7 +360,7 @@ class OptOutManager:
     def _apply_sms_opt_out(self, phone: str):
         """Apply SMS opt-out"""
         # Update leads table
-        self.storage.execute(
+        self.SecureStorage.execute(
             "UPDATE leads SET sms_opt_out = 1 WHERE phone = ?",
             (phone,)
         )
@@ -387,26 +387,26 @@ class OptOutManager:
         # Check specific opt-out type
         if opt_out_type:
             if opt_out_type == OptOutType.EMAIL:
-                result = self.storage.query(
+                result = self.SecureStorage.query(
                     "SELECT 1 FROM leads WHERE email = ? AND email_opt_out = 1",
                     (identifier,)
                 ).fetchone()
                 return bool(result)
             elif opt_out_type == OptOutType.PHONE:
-                result = self.storage.query(
+                result = self.SecureStorage.query(
                     "SELECT 1 FROM leads WHERE phone = ? AND phone_opt_out = 1",
                     (identifier,)
                 ).fetchone()
                 return bool(result)
             elif opt_out_type == OptOutType.SMS:
-                result = self.storage.query(
+                result = self.SecureStorage.query(
                     "SELECT 1 FROM leads WHERE phone = ? AND sms_opt_out = 1",
                     (identifier,)
                 ).fetchone()
                 return bool(result)
         
         # Check for any opt-out
-        result = self.storage.query(
+        result = self.SecureStorage.query(
             "SELECT 1 FROM opt_out_requests WHERE identifier = ? AND status = ?",
             (identifier, OptOutStatus.PROCESSED.value)
         ).fetchone()
@@ -444,7 +444,7 @@ class OptOutManager:
         sql += " ORDER BY timestamp DESC"
         
         # Execute query
-        for row in self.storage.query(sql, params):
+        for row in self.SecureStorage.query(sql, params):
             request = OptOutRequest(
                 id=row['id'],
                 identifier=row['identifier'],
@@ -477,7 +477,7 @@ class OptOutManager:
         )
         
         # Save to database
-        self.storage.execute(
+        self.SecureStorage.execute(
             """
             INSERT INTO data_retention_policies 
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
@@ -560,7 +560,7 @@ class OptOutManager:
         # In a real implementation, this might move data to an archive table
         # For now, we'll just log the action
         
-        count = self.storage.query(
+        count = self.SecureStorage.query(
             "SELECT COUNT(*) FROM leads WHERE created_at < ?",
             (cutoff_date.isoformat(),)
         ).fetchone()[0]
@@ -569,7 +569,7 @@ class OptOutManager:
             self.logger.info(f"Retention policy would affect {count} leads created before {cutoff_date}")
             
             # In a real implementation:
-            # self.storage.execute("DELETE FROM leads WHERE created_at < ?", (cutoff_date.isoformat(),))
+            # self.SecureStorage.execute("DELETE FROM leads WHERE created_at < ?", (cutoff_date.isoformat(),))
             
             # Log compliance action
             self._log_compliance_action(
@@ -587,7 +587,7 @@ class OptOutManager:
 
     def _apply_campaign_retention(self, cutoff_date: datetime):
         """Apply retention policy to campaigns"""
-        count = self.storage.query(
+        count = self.SecureStorage.query(
             "SELECT COUNT(*) FROM campaigns WHERE created_at < ?",
             (cutoff_date.isoformat(),)
         ).fetchone()[0]
@@ -611,7 +611,7 @@ class OptOutManager:
 
     def _apply_email_event_retention(self, cutoff_date: datetime):
         """Apply retention policy to email events"""
-        count = self.storage.query(
+        count = self.SecureStorage.query(
             "SELECT COUNT(*) FROM email_events WHERE timestamp < ?",
             (cutoff_date.isoformat(),)
         ).fetchone()[0]
@@ -635,7 +635,7 @@ class OptOutManager:
 
     def _apply_opt_out_request_retention(self, cutoff_date: datetime):
         """Apply retention policy to opt-out requests"""
-        count = self.storage.query(
+        count = self.SecureStorage.query(
             "SELECT COUNT(*) FROM opt_out_requests WHERE timestamp < ?",
             (cutoff_date.isoformat(),)
         ).fetchone()[0]
@@ -663,7 +663,7 @@ class OptOutManager:
         """Log a compliance action to the audit log"""
         log_id = f"log_{uuid.uuid4().hex}"
         
-        self.storage.execute(
+        self.SecureStorage.execute(
             """
             INSERT INTO compliance_audit_log 
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
@@ -703,7 +703,7 @@ class OptOutManager:
         sql += " ORDER BY timestamp DESC"
         
         # Execute query
-        for row in self.storage.query(sql, params):
+        for row in self.SecureStorage.query(sql, params):
             log = {
                 "id": row['id'],
                 "action": row['action'],
@@ -726,7 +726,7 @@ class OptOutManager:
         # Get opt-out statistics
         opt_out_stats = {}
         for opt_out_type in OptOutType:
-            count = self.storage.query(
+            count = self.SecureStorage.query(
                 "SELECT COUNT(*) FROM opt_out_requests WHERE opt_out_type = ? AND timestamp >= ?",
                 (opt_out_type.value, since.isoformat())
             ).fetchone()[0]
@@ -746,7 +746,7 @@ class OptOutManager:
         # Get audit log statistics
         audit_stats = {}
         for action in ["opt_out_processed", "data_retention_applied"]:
-            count = self.storage.query(
+            count = self.SecureStorage.query(
                 "SELECT COUNT(*) FROM compliance_audit_log WHERE action = ? AND timestamp >= ?",
                 (action, since.isoformat())
             ).fetchone()[0]
@@ -765,17 +765,17 @@ class OptOutManager:
         # Get all opted-out identifiers
         opted_out = set()
         
-        for row in self.storage.query("SELECT identifier FROM opt_out_requests WHERE status = ?", (OptOutStatus.PROCESSED.value,)):
+        for row in self.SecureStorage.query("SELECT identifier FROM opt_out_requests WHERE status = ?", (OptOutStatus.PROCESSED.value,)):
             opted_out.add(row['identifier'])
         
         # Also check leads table for opt-out flags
-        for row in self.storage.query("SELECT email FROM leads WHERE email_opt_out = 1"):
+        for row in self.SecureStorage.query("SELECT email FROM leads WHERE email_opt_out = 1"):
             opted_out.add(row['email'])
         
-        for row in self.storage.query("SELECT phone FROM leads WHERE phone_opt_out = 1"):
+        for row in self.SecureStorage.query("SELECT phone FROM leads WHERE phone_opt_out = 1"):
             opted_out.add(row['phone'])
         
-        for row in self.storage.query("SELECT phone FROM leads WHERE sms_opt_out = 1"):
+        for row in self.SecureStorage.query("SELECT phone FROM leads WHERE sms_opt_out = 1"):
             opted_out.add(row['phone'])
         
         # Prepare data
@@ -824,17 +824,17 @@ class OptOutManager:
             
             # Remove opt-out flags
             if request.opt_out_type == OptOutType.EMAIL:
-                self.storage.execute(
+                self.SecureStorage.execute(
                     "UPDATE leads SET email_opt_out = 0 WHERE email = ?",
                     (request.identifier,)
                 )
             elif request.opt_out_type == OptOutType.PHONE:
-                self.storage.execute(
+                self.SecureStorage.execute(
                     "UPDATE leads SET phone_opt_out = 0 WHERE phone = ?",
                     (request.identifier,)
                 )
             elif request.opt_out_type == OptOutType.SMS:
-                self.storage.execute(
+                self.SecureStorage.execute(
                     "UPDATE leads SET sms_opt_out = 0 WHERE phone = ?",
                     (request.identifier,)
                 )

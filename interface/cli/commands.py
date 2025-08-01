@@ -22,7 +22,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 try:
-    from modules.lead_generation.scraper import Scraper
+    from modules.lead_generation.scraper import LeadScraper
     from modules.lead_enrichment.persona_stitcher import PersonaStitcher
     from modules.conversation_mining.monitor import ConversationMonitor
     from modules.web_crawlers.crawler import AutonomousCrawler
@@ -152,7 +152,7 @@ class DRNCLI:
             sys.exit(1)
             
     def _generate_leads(self, args):
-        scraper = Scraper()
+        scraper = LeadScraper()
         keywords = [k.strip() for k in args.keywords.split(',')]
         
         print(f"Generating leads from {args.source} with keywords: {', '.join(keywords)}")

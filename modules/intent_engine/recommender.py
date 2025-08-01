@@ -18,7 +18,7 @@ from sklearn.metrics import classification_report
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder, StandardScaler
 
-from engine.storage import Storage
+from engine.SecureStorage import SecureStorage
 from ai.nlp import NLPProcessor
 from ai.scoring import LeadScorer
 
@@ -61,8 +61,8 @@ class Recommendation:
 
 
 class OutreachRecommender:
-    def __init__(self, storage: Storage, nlp_processor: NLPProcessor, scorer: LeadScorer):
-        self.storage = storage
+    def __init__(self, SecureStorage: SecureStorage, nlp_processor: NLPProcessor, scorer: LeadScorer):
+        self.SecureStorage = SecureStorage
         self.nlp = nlp_processor
         self.scorer = scorer
         self.logger = logging.getLogger("outreach_recommender")
@@ -100,7 +100,7 @@ class OutreachRecommender:
 
     def _initialize_tables(self):
         """Initialize database tables if they don't exist"""
-        self.storage.execute("""
+        self.SecureStorage.execute("""
         CREATE TABLE IF NOT EXISTS engagement_signals (
             id TEXT PRIMARY KEY,
             lead_id TEXT NOT NULL,
@@ -114,7 +114,7 @@ class OutreachRecommender:
         )
         """)
 
-        self.storage.execute("""
+        self.SecureStorage.execute("""
         CREATE TABLE IF NOT EXISTS recommendations (
             id TEXT PRIMARY KEY,
             lead_id TEXT NOT NULL,
@@ -132,7 +132,7 @@ class OutreachRecommender:
         )
         """)
 
-        self.storage.execute("""
+        self.SecureStorage.execute("""
         CREATE TABLE IF NOT EXISTS recommendation_feedback (
             id TEXT PRIMARY KEY,
             recommendation_id TEXT NOT NULL,
@@ -330,7 +330,7 @@ class OutreachRecommender:
         """Track an engagement signal"""
         signal_id = f"sig_{int(datetime.now().timestamp())}"
         
-        self.storage.execute(
+        self.SecureStorage.execute(
             """
             INSERT INTO engagement_signals 
             VALUES (?, ?, ?, ?, ?, ?)
@@ -408,7 +408,7 @@ class OutreachRecommender:
         query += " ORDER BY timestamp DESC"
         
         signals = []
-        for row in self.storage.query(query, params):
+        for row in self.SecureStorage.query(query, params):
             signal = EngagementSignal(
                 lead_id=row['lead_id'],
                 campaign_id=row['campaign_id'],
@@ -617,7 +617,7 @@ class OutreachRecommender:
 
     def _save_recommendation(self, recommendation: Recommendation):
         """Save a recommendation to the database"""
-        self.storage.execute(
+        self.SecureStorage.execute(
             """
             INSERT OR REPLACE INTO recommendations 
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -642,7 +642,7 @@ class OutreachRecommender:
         """Record feedback on a recommendation"""
         feedback_id = f"fb_{int(datetime.now().timestamp())}"
         
-        self.storage.execute(
+        self.SecureStorage.execute(
             """
             INSERT INTO recommendation_feedback 
             VALUES (?, ?, ?, ?)
@@ -663,7 +663,7 @@ class OutreachRecommender:
     def _check_retrain_needed(self):
         """Check if model retraining is needed"""
         # Count feedback received since last model update
-        count = self.storage.query(
+        count = self.SecureStorage.query(
             "SELECT COUNT(*) FROM recommendation_feedback WHERE timestamp > ?",
             (datetime.now().isoformat(),)  # This would be the last model update time
         ).fetchone()[0]
@@ -685,7 +685,7 @@ class OutreachRecommender:
         query += " ORDER BY priority DESC, confidence DESC"
         
         recommendations = []
-        for row in self.storage.query(query, params):
+        for row in self.SecureStorage.query(query, params):
             rec = Recommendation(
                 id=row['id'],
                 lead_id=row['lead_id'],
@@ -711,7 +711,7 @@ class OutreachRecommender:
         rec_counts = {rec_type.value: 0 for rec_type in RecommendationType}
         total_recs = 0
         
-        for row in self.storage.query(
+        for row in self.SecureStorage.query(
             "SELECT recommendation_type, COUNT(*) as count FROM recommendations WHERE created_at >= ? GROUP BY recommendation_type",
             (since.isoformat(),)
         ):
@@ -720,14 +720,14 @@ class OutreachRecommender:
         
         # Get feedback counts
         feedback_counts = {}
-        for row in self.storage.query(
+        for row in self.SecureStorage.query(
             "SELECT feedback_type, COUNT(*) as count FROM recommendation_feedback WHERE timestamp >= ? GROUP BY feedback_type",
             (since.isoformat(),)
         ):
             feedback_counts[row['feedback_type']] = row['count']
         
         # Calculate average confidence
-        avg_confidence = self.storage.query(
+        avg_confidence = self.SecureStorage.query(
             "SELECT AVG(confidence) FROM recommendations WHERE created_at >= ?",
             (since.isoformat(),)
         ).fetchone()[0] or 0

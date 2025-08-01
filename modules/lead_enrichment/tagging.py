@@ -10,7 +10,7 @@ import pandas as pd
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
-from engine.storage import Storage
+from engine.SecureStorage import SecureStorage
 from ai.nlp import NLPProcessor
 from ai.scoring import LeadScorer
 
@@ -46,8 +46,8 @@ class Persona:
 
 
 class DNAStyleTaggingSystem:
-    def __init__(self, storage: Storage, nlp_processor: NLPProcessor, scorer: LeadScorer):
-        self.storage = storage
+    def __init__(self, SecureStorage: SecureStorage, nlp_processor: NLPProcessor, scorer: LeadScorer):
+        self.SecureStorage = SecureStorage
         self.nlp = nlp_processor
         self.scorer = scorer
         self.tags: Dict[str, Tag] = {}
@@ -58,7 +58,7 @@ class DNAStyleTaggingSystem:
 
     def _initialize_tables(self):
         """Initialize database tables if they don't exist"""
-        self.storage.execute("""
+        self.SecureStorage.execute("""
         CREATE TABLE IF NOT EXISTS tags (
             id TEXT PRIMARY KEY,
             name TEXT NOT NULL,
@@ -72,7 +72,7 @@ class DNAStyleTaggingSystem:
         )
         """)
 
-        self.storage.execute("""
+        self.SecureStorage.execute("""
         CREATE TABLE IF NOT EXISTS personas (
             id TEXT PRIMARY KEY,
             name TEXT NOT NULL,
@@ -82,7 +82,7 @@ class DNAStyleTaggingSystem:
         )
         """)
 
-        self.storage.execute("""
+        self.SecureStorage.execute("""
         CREATE TABLE IF NOT EXISTS lead_tags (
             lead_id TEXT,
             tag_id TEXT,
@@ -94,9 +94,9 @@ class DNAStyleTaggingSystem:
         """)
 
     def _load_system_data(self):
-        """Load tags and personas from storage"""
+        """Load tags and personas from SecureStorage"""
         # Load tags
-        for row in self.storage.query("SELECT * FROM tags"):
+        for row in self.SecureStorage.query("SELECT * FROM tags"):
             tag = Tag(
                 id=row['id'],
                 name=row['name'],
@@ -111,7 +111,7 @@ class DNAStyleTaggingSystem:
             self.tags[tag.id] = tag
 
         # Load personas
-        for row in self.storage.query("SELECT * FROM personas"):
+        for row in self.SecureStorage.query("SELECT * FROM personas"):
             persona = Persona(
                 id=row['id'],
                 name=row['name'],
@@ -122,7 +122,7 @@ class DNAStyleTaggingSystem:
             self.personas[persona.id] = persona
 
         # Load lead-tag associations
-        for row in self.storage.query("SELECT * FROM lead_tags"):
+        for row in self.SecureStorage.query("SELECT * FROM lead_tags"):
             lead_id = row['lead_id']
             tag_id = row['tag_id']
             if lead_id not in self.lead_tags:
@@ -145,7 +145,7 @@ class DNAStyleTaggingSystem:
         )
         self.tags[tag_id] = tag
         
-        self.storage.execute(
+        self.SecureStorage.execute(
             "INSERT INTO tags VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
             (
                 tag_id, name, description, tag_type.value,
@@ -167,7 +167,7 @@ class DNAStyleTaggingSystem:
         )
         self.personas[persona_id] = persona
         
-        self.storage.execute(
+        self.SecureStorage.execute(
             "INSERT INTO personas VALUES (?, ?, ?, ?, ?)",
             (
                 persona_id, name, description,
@@ -272,7 +272,7 @@ class DNAStyleTaggingSystem:
         if tag_id not in self.lead_tags[lead_id]:
             self.lead_tags[lead_id].add(tag_id)
             
-            self.storage.execute(
+            self.SecureStorage.execute(
                 "INSERT OR REPLACE INTO lead_tags VALUES (?, ?, ?, ?, ?)",
                 (
                     lead_id, tag_id, source,
@@ -314,7 +314,7 @@ class DNAStyleTaggingSystem:
         # Aggregate data from leads
         lead_data = []
         for lead_id in lead_ids:
-            # In a real implementation, we'd fetch full lead data from storage
+            # In a real implementation, we'd fetch full lead data from SecureStorage
             lead_data.append({"id": lead_id})  # Simplified for example
             
         # Calculate insights using NLP and scoring
@@ -358,7 +358,7 @@ class DNAStyleTaggingSystem:
                 self.tags[tag_id].weight = new_weight
                 self.tags[tag_id].updated_at = datetime.now()
                 
-                self.storage.execute(
+                self.SecureStorage.execute(
                     "UPDATE tags SET weight = ?, updated_at = ? WHERE id = ?",
                     (new_weight, datetime.now().isoformat(), tag_id)
                 )
@@ -366,7 +366,7 @@ class DNAStyleTaggingSystem:
     def bulk_tag_leads(self, lead_ids: List[str]):
         """Apply tags to a batch of leads efficiently"""
         for lead_id in lead_ids:
-            # In a real implementation, we'd fetch full lead data from storage
+            # In a real implementation, we'd fetch full lead data from SecureStorage
             lead_data = {"id": lead_id}  # Simplified for example
             self.apply_tags_to_lead(lead_id, lead_data)
 

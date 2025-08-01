@@ -16,7 +16,7 @@ import seaborn as sns
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import MinMaxScaler
 
-from engine.storage import Storage
+from engine.SecureStorage import SecureStorage
 from ai.nlp import NLPProcessor
 from ai.scoring import LeadScorer
 
@@ -55,8 +55,8 @@ class HeatmapData:
 
 
 class HeatmapGenerator:
-    def __init__(self, storage: Storage, nlp_processor: NLPProcessor, scorer: LeadScorer):
-        self.storage = storage
+    def __init__(self, SecureStorage: SecureStorage, nlp_processor: NLPProcessor, scorer: LeadScorer):
+        self.SecureStorage = SecureStorage
         self.nlp = nlp_processor
         self.scorer = scorer
         self.logger = logging.getLogger("heatmap_generator")
@@ -91,7 +91,7 @@ class HeatmapGenerator:
 
     def _initialize_tables(self):
         """Initialize database tables if they don't exist"""
-        self.storage.execute("""
+        self.SecureStorage.execute("""
         CREATE TABLE IF NOT EXISTS engagement_events (
             id TEXT PRIMARY KEY,
             lead_id TEXT NOT NULL,
@@ -105,7 +105,7 @@ class HeatmapGenerator:
         )
         """)
 
-        self.storage.execute("""
+        self.SecureStorage.execute("""
         CREATE TABLE IF NOT EXISTS heatmap_data (
             id TEXT PRIMARY KEY,
             campaign_id TEXT NOT NULL,
@@ -117,7 +117,7 @@ class HeatmapGenerator:
         )
         """)
 
-        self.storage.execute("""
+        self.SecureStorage.execute("""
         CREATE TABLE IF NOT EXISTS engagement_patterns (
             id TEXT PRIMARY KEY,
             campaign_id TEXT NOT NULL,
@@ -147,7 +147,7 @@ class HeatmapGenerator:
         """Track an engagement event"""
         event_id = f"eng_{int(datetime.now().timestamp())}"
         
-        self.storage.execute(
+        self.SecureStorage.execute(
             """
             INSERT INTO engagement_events 
             VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -222,7 +222,7 @@ class HeatmapGenerator:
         query += " ORDER BY timestamp"
         
         events = []
-        for row in self.storage.query(query, params):
+        for row in self.SecureStorage.query(query, params):
             event = EngagementEvent(
                 id=row['id'],
                 lead_id=row['lead_id'],

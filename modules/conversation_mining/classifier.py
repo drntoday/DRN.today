@@ -18,7 +18,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import LabelEncoder
 
-from engine.storage import Storage
+from engine.SecureStorage import SecureStorage
 from ai.nlp import NLPProcessor
 
 
@@ -48,8 +48,8 @@ class ClassificationResult:
 
 
 class ConversationClassifier:
-    def __init__(self, storage: Storage, nlp_processor: NLPProcessor):
-        self.storage = storage
+    def __init__(self, SecureStorage: SecureStorage, nlp_processor: NLPProcessor):
+        self.SecureStorage = SecureStorage
         self.nlp = nlp_processor
         self.model = None
         self.label_encoder = LabelEncoder()
@@ -73,7 +73,7 @@ class ConversationClassifier:
 
     def _initialize_tables(self):
         """Initialize database tables if they don't exist"""
-        self.storage.execute("""
+        self.SecureStorage.execute("""
         CREATE TABLE IF NOT EXISTS conversation_classifications (
             id TEXT PRIMARY KEY,
             conversation_id TEXT NOT NULL,
@@ -87,7 +87,7 @@ class ConversationClassifier:
         )
         """)
 
-        self.storage.execute("""
+        self.SecureStorage.execute("""
         CREATE TABLE IF NOT EXISTS classification_training_data (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             text TEXT NOT NULL,
@@ -212,7 +212,7 @@ class ConversationClassifier:
         training_data = []
         
         # Get from database
-        for row in self.storage.query("SELECT text, category FROM classification_training_data"):
+        for row in self.SecureStorage.query("SELECT text, category FROM classification_training_data"):
             training_data.append((row['text'], row['category']))
         
         # Add default examples if not enough data
@@ -450,7 +450,7 @@ class ConversationClassifier:
 
     def _save_classification(self, result: ClassificationResult):
         """Save classification result to database"""
-        self.storage.execute(
+        self.SecureStorage.execute(
             """
             INSERT OR REPLACE INTO conversation_classifications 
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
@@ -469,7 +469,7 @@ class ConversationClassifier:
 
     def get_classification(self, conversation_id: str) -> Optional[ClassificationResult]:
         """Get classification result for a conversation"""
-        row = self.storage.query(
+        row = self.SecureStorage.query(
             "SELECT * FROM conversation_classifications WHERE conversation_id = ? ORDER BY timestamp DESC LIMIT 1",
             (conversation_id,)
         ).fetchone()
@@ -489,7 +489,7 @@ class ConversationClassifier:
 
     def add_training_example(self, text: str, category: str, source: str = "manual"):
         """Add a new training example"""
-        self.storage.execute(
+        self.SecureStorage.execute(
             "INSERT INTO classification_training_data (text, category, source, timestamp) VALUES (?, ?, ?, ?)",
             (text, category, source, datetime.now().isoformat())
         )
@@ -500,7 +500,7 @@ class ConversationClassifier:
     def _check_retrain_needed(self):
         """Check if model retraining is needed"""
         # Count new training examples since last model update
-        count = self.storage.query(
+        count = self.SecureStorage.query(
             "SELECT COUNT(*) FROM classification_training_data WHERE timestamp > ?",
             (datetime.now().isoformat(),)  # This would be the last model update time
         ).fetchone()[0]
@@ -523,14 +523,14 @@ class ConversationClassifier:
         """
         
         stats = {}
-        for row in self.storage.query(query, (since.isoformat(),)):
+        for row in self.SecureStorage.query(query, (since.isoformat(),)):
             stats[row['category']] = {
                 "count": row['count'],
                 "avg_confidence": row['avg_confidence']
             }
         
         # Get processing time stats
-        time_stats = self.storage.query(
+        time_stats = self.SecureStorage.query(
             "SELECT AVG(processing_time) as avg_time, MAX(processing_time) as max_time FROM conversation_classifications WHERE timestamp >= ?",
             (since.isoformat(),)
         ).fetchone()
@@ -545,7 +545,7 @@ class ConversationClassifier:
     def export_training_data(self, format: str = "csv") -> str:
         """Export training data in specified format"""
         data = []
-        for row in self.storage.query("SELECT text, category, source, timestamp FROM classification_training_data"):
+        for row in self.SecureStorage.query("SELECT text, category, source, timestamp FROM classification_training_data"):
             data.append({
                 "text": row['text'],
                 "category": row['category'],

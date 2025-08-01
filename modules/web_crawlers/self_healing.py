@@ -13,7 +13,7 @@ from pathlib import Path
 import numpy as np
 from playwright.async_api import Page, ElementHandle, TimeoutError as PlaywrightTimeoutError
 
-from engine.storage import Storage
+from engine.SecureStorage import SecureStorage
 from ai.nlp import NLPProcessor
 
 
@@ -50,8 +50,8 @@ class HealingResult:
 
 
 class DOMSelfHealingEngine:
-    def __init__(self, storage: Storage, nlp_processor: NLPProcessor):
-        self.storage = storage
+    def __init__(self, SecureStorage: SecureStorage, nlp_processor: NLPProcessor):
+        self.SecureStorage = SecureStorage
         self.nlp = nlp_processor
         self.logger = logging.getLogger("dom_self_healing")
         self.logger.setLevel(logging.INFO)
@@ -80,7 +80,7 @@ class DOMSelfHealingEngine:
 
     def _initialize_tables(self):
         """Initialize database tables if they don't exist"""
-        self.storage.execute("""
+        self.SecureStorage.execute("""
         CREATE TABLE IF NOT EXISTS selector_patterns (
             id TEXT PRIMARY KEY,
             url_pattern TEXT NOT NULL,
@@ -96,7 +96,7 @@ class DOMSelfHealingEngine:
         )
         """)
 
-        self.storage.execute("""
+        self.SecureStorage.execute("""
         CREATE TABLE IF NOT EXISTS healing_history (
             id TEXT PRIMARY KEY,
             selector_pattern_id TEXT,
@@ -110,8 +110,8 @@ class DOMSelfHealingEngine:
         """)
 
     def _load_selector_patterns(self):
-        """Load selector patterns from storage"""
-        for row in self.storage.query("SELECT * FROM selector_patterns"):
+        """Load selector patterns from SecureStorage"""
+        for row in self.SecureStorage.query("SELECT * FROM selector_patterns"):
             pattern = SelectorPattern(
                 id=row['id'],
                 url_pattern=row['url_pattern'],
@@ -128,8 +128,8 @@ class DOMSelfHealingEngine:
             self.selector_patterns[pattern.id] = pattern
 
     def save_selector_pattern(self, pattern: SelectorPattern):
-        """Save a selector pattern to storage"""
-        self.storage.execute(
+        """Save a selector pattern to SecureStorage"""
+        self.SecureStorage.execute(
             """
             INSERT OR REPLACE INTO selector_patterns 
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -260,7 +260,7 @@ class DOMSelfHealingEngine:
         self.save_selector_pattern(pattern)
         
         # Save to healing history
-        self.storage.execute(
+        self.SecureStorage.execute(
             """
             INSERT INTO healing_history 
             VALUES (?, ?, ?, ?, ?, ?)

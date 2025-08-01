@@ -13,7 +13,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import Pipeline
 
-from engine.storage import Storage
+from engine.SecureStorage import SecureStorage
 from ai.nlp import NLPProcessor
 
 
@@ -40,8 +40,8 @@ class BounceAnalysis:
 
 
 class BounceDetector:
-    def __init__(self, storage: Storage, nlp_processor: NLPProcessor):
-        self.storage = storage
+    def __init__(self, SecureStorage: SecureStorage, nlp_processor: NLPProcessor):
+        self.SecureStorage = SecureStorage
         self.nlp = nlp_processor
         self.logger = logging.getLogger("bounce_detector")
         self.logger.setLevel(logging.INFO)
@@ -63,7 +63,7 @@ class BounceDetector:
 
     def _initialize_tables(self):
         """Initialize database tables if they don't exist"""
-        self.storage.execute("""
+        self.SecureStorage.execute("""
         CREATE TABLE IF NOT EXISTS bounce_patterns (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             pattern_type TEXT NOT NULL,
@@ -74,7 +74,7 @@ class BounceDetector:
         )
         """)
 
-        self.storage.execute("""
+        self.SecureStorage.execute("""
         CREATE TABLE IF NOT EXISTS bounce_analyses (
             id TEXT PRIMARY KEY,
             email_id TEXT NOT NULL,
@@ -92,7 +92,7 @@ class BounceDetector:
     def _initialize_bounce_patterns(self):
         """Initialize bounce detection patterns"""
         # Load default patterns if table is empty
-        pattern_count = self.storage.query("SELECT COUNT(*) FROM bounce_patterns").fetchone()[0]
+        pattern_count = self.SecureStorage.query("SELECT COUNT(*) FROM bounce_patterns").fetchone()[0]
         
         if pattern_count == 0:
             default_patterns = [
@@ -108,7 +108,7 @@ class BounceDetector:
                 # Soft bounce patterns
                 ("regex", r"mailbox.*full", "soft_bounce", "Mailbox full"),
                 ("regex", r"over.*quota", "soft_bounce", "Over quota"),
-                ("regex", r"exceeded.*storage", "soft_bounce", "Exceeded storage limit"),
+                ("regex", r"exceeded.*SecureStorage", "soft_bounce", "Exceeded SecureStorage limit"),
                 ("regex", r"temporarily.*unavailable", "soft_bounce", "Temporarily unavailable"),
                 ("regex", r"421.*4\.2\.1", "soft_bounce", "SMTP 421 4.2.1 error"),
                 
@@ -151,7 +151,7 @@ class BounceDetector:
             ]
             
             for pattern_type, pattern, bounce_type, description in default_patterns:
-                self.storage.execute(
+                self.SecureStorage.execute(
                     "INSERT INTO bounce_patterns (pattern_type, pattern, bounce_type, description) VALUES (?, ?, ?, ?)",
                     (pattern_type, pattern, bounce_type, description)
                 )
@@ -162,7 +162,7 @@ class BounceDetector:
             "diagnostic_code": []
         }
         
-        for row in self.storage.query("SELECT * FROM bounce_patterns WHERE active = 1"):
+        for row in self.SecureStorage.query("SELECT * FROM bounce_patterns WHERE active = 1"):
             self.patterns[row['pattern_type']].append({
                 "pattern": row['pattern'],
                 "bounce_type": BounceType(row['bounce_type']),
@@ -391,7 +391,7 @@ class BounceDetector:
 
     def _save_bounce_analysis(self, analysis: BounceAnalysis):
         """Save bounce analysis to database"""
-        self.storage.execute(
+        self.SecureStorage.execute(
             """
             INSERT OR REPLACE INTO bounce_analyses 
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
@@ -410,7 +410,7 @@ class BounceDetector:
 
     def get_bounce_analysis(self, email_id: str) -> Optional[BounceAnalysis]:
         """Get bounce analysis for a specific email"""
-        row = self.storage.query(
+        row = self.SecureStorage.query(
             "SELECT * FROM bounce_analyses WHERE email_id = ?",
             (email_id,)
         ).fetchone()
@@ -437,7 +437,7 @@ class BounceDetector:
         bounce_counts = {bounce_type.value: 0 for bounce_type in BounceType}
         total_bounces = 0
         
-        for row in self.storage.query(
+        for row in self.SecureStorage.query(
             "SELECT bounce_type, COUNT(*) as count FROM bounce_analyses WHERE timestamp >= ? GROUP BY bounce_type",
             (since.isoformat(),)
         ):
@@ -446,20 +446,20 @@ class BounceDetector:
         
         # Get average confidence by type
         confidence_stats = {}
-        for row in self.storage.query(
+        for row in self.SecureStorage.query(
             "SELECT bounce_type, AVG(confidence) as avg_confidence FROM bounce_analyses WHERE timestamp >= ? GROUP BY bounce_type",
             (since.isoformat(),)
         ):
             confidence_stats[row['bounce_type']] = row['avg_confidence']
         
         # Get top bounce reasons
-        top_reasons = self.storage.query(
+        top_reasons = self.SecureStorage.query(
             "SELECT bounce_reason, COUNT(*) as count FROM bounce_analyses WHERE timestamp >= ? GROUP BY bounce_reason ORDER BY count DESC LIMIT 5",
             (since.isoformat(),)
         ).fetchall()
         
         # Calculate bounce rate
-        total_emails = self.storage.query(
+        total_emails = self.SecureStorage.query(
             "SELECT COUNT(*) FROM email_replies WHERE received_at >= ?",
             (since.isoformat(),)
         ).fetchone()[0]
@@ -481,7 +481,7 @@ class BounceDetector:
         
         # Get bounce data
         bounce_data = []
-        for row in self.storage.query(
+        for row in self.SecureStorage.query(
             "SELECT * FROM bounce_analyses WHERE timestamp >= ? ORDER BY timestamp DESC",
             (since.isoformat(),)
         ):
@@ -505,7 +505,7 @@ class BounceDetector:
 
     def add_bounce_pattern(self, pattern_type: str, pattern: str, bounce_type: BounceType, description: str = ""):
         """Add a new bounce detection pattern"""
-        self.storage.execute(
+        self.SecureStorage.execute(
             "INSERT INTO bounce_patterns (pattern_type, pattern, bounce_type, description) VALUES (?, ?, ?, ?)",
             (pattern_type, pattern, bounce_type.value, description)
         )
@@ -528,7 +528,7 @@ class BounceDetector:
 
     def remove_bounce_pattern(self, pattern_id: int):
         """Remove a bounce detection pattern"""
-        self.storage.execute(
+        self.SecureStorage.execute(
             "UPDATE bounce_patterns SET active = 0 WHERE id = ?",
             (pattern_id,)
         )

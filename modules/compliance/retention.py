@@ -10,7 +10,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 import uuid
 
-from engine.storage import Storage
+from engine.SecureStorage import SecureStorage
 from ai.nlp import NLPProcessor
 
 
@@ -82,8 +82,8 @@ class RetentionAudit:
 
 
 class DataRetentionManager:
-    def __init__(self, storage: Storage, nlp_processor: NLPProcessor):
-        self.storage = storage
+    def __init__(self, SecureStorage: SecureStorage, nlp_processor: NLPProcessor):
+        self.SecureStorage = SecureStorage
         self.nlp = nlp_processor
         self.logger = logging.getLogger("data_retention_manager")
         self.logger.setLevel(logging.INFO)
@@ -145,7 +145,7 @@ class DataRetentionManager:
 
     def _initialize_tables(self):
         """Initialize database tables if they don't exist"""
-        self.storage.execute("""
+        self.SecureStorage.execute("""
         CREATE TABLE IF NOT EXISTS retention_policies (
             id TEXT PRIMARY KEY,
             name TEXT NOT NULL,
@@ -162,7 +162,7 @@ class DataRetentionManager:
         )
         """)
 
-        self.storage.execute("""
+        self.SecureStorage.execute("""
         CREATE TABLE IF NOT EXISTS retention_jobs (
             id TEXT PRIMARY KEY,
             policy_id TEXT NOT NULL,
@@ -178,7 +178,7 @@ class DataRetentionManager:
         )
         """)
 
-        self.storage.execute("""
+        self.SecureStorage.execute("""
         CREATE TABLE IF NOT EXISTS retention_audit (
             id TEXT PRIMARY KEY,
             policy_id TEXT NOT NULL,
@@ -194,7 +194,7 @@ class DataRetentionManager:
         )
         """)
 
-        self.storage.execute("""
+        self.SecureStorage.execute("""
         CREATE TABLE IF NOT EXISTS data_archive (
             id TEXT PRIMARY KEY,
             original_table TEXT NOT NULL,
@@ -208,8 +208,8 @@ class DataRetentionManager:
         """)
 
     def _load_policies(self):
-        """Load retention policies from storage"""
-        for row in self.storage.query("SELECT * FROM retention_policies WHERE is_active = 1"):
+        """Load retention policies from SecureStorage"""
+        for row in self.SecureStorage.query("SELECT * FROM retention_policies WHERE is_active = 1"):
             policy = RetentionPolicy(
                 id=row['id'],
                 name=row['name'],
@@ -227,8 +227,8 @@ class DataRetentionManager:
             self.policies[policy.id] = policy
 
     def _load_active_jobs(self):
-        """Load active retention jobs from storage"""
-        for row in self.storage.query("SELECT * FROM retention_jobs WHERE status IN (?, ?)", (RetentionStatus.PROCESSING.value, RetentionStatus.ACTIVE.value)):
+        """Load active retention jobs from SecureStorage"""
+        for row in self.SecureStorage.query("SELECT * FROM retention_jobs WHERE status IN (?, ?)", (RetentionStatus.PROCESSING.value, RetentionStatus.ACTIVE.value)):
             job = RetentionJob(
                 id=row['id'],
                 policy_id=row['policy_id'],
@@ -268,7 +268,7 @@ class DataRetentionManager:
 
     def _save_policy(self, policy: RetentionPolicy):
         """Save a retention policy to database"""
-        self.storage.execute(
+        self.SecureStorage.execute(
             """
             INSERT OR REPLACE INTO retention_policies 
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -318,7 +318,7 @@ class DataRetentionManager:
             return False
         
         # Deactivate in database
-        self.storage.execute(
+        self.SecureStorage.execute(
             "UPDATE retention_policies SET is_active = 0 WHERE id = ?",
             (policy_id,)
         )
@@ -369,7 +369,7 @@ class DataRetentionManager:
         )
         
         # Save to database
-        self.storage.execute(
+        self.SecureStorage.execute(
             """
             INSERT INTO retention_jobs 
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -482,7 +482,7 @@ class DataRetentionManager:
 
     def _save_job(self, job: RetentionJob):
         """Save a retention job to database"""
-        self.storage.execute(
+        self.SecureStorage.execute(
             """
             INSERT OR REPLACE INTO retention_jobs 
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -509,7 +509,7 @@ class DataRetentionManager:
         records = []
         
         if policy.entity_type == "leads":
-            for row in self.storage.query(
+            for row in self.SecureStorage.query(
                 "SELECT id, name, email, company, created_at FROM leads WHERE created_at < ?",
                 (cutoff_date.isoformat(),)
             ):
@@ -522,7 +522,7 @@ class DataRetentionManager:
                 })
         
         elif policy.entity_type == "campaigns":
-            for row in self.storage.query(
+            for row in self.SecureStorage.query(
                 "SELECT id, name, created_at FROM campaigns WHERE created_at < ?",
                 (cutoff_date.isoformat(),)
             ):
@@ -533,7 +533,7 @@ class DataRetentionManager:
                 })
         
         elif policy.entity_type == "email_events":
-            for row in self.storage.query(
+            for row in self.SecureStorage.query(
                 "SELECT id, campaign_id, lead_id, event_type, timestamp FROM email_events WHERE timestamp < ?",
                 (cutoff_date.isoformat(),)
             ):
@@ -546,7 +546,7 @@ class DataRetentionManager:
                 })
         
         elif policy.entity_type == "opt_out_requests":
-            for row in self.storage.query(
+            for row in self.SecureStorage.query(
                 "SELECT id, identifier, opt_out_type, timestamp FROM opt_out_requests WHERE timestamp < ?",
                 (cutoff_date.isoformat(),)
             ):
@@ -602,7 +602,7 @@ class DataRetentionManager:
             for condition in conditions["custom"]:
                 if condition["type"] == "sql":
                     # Execute custom SQL condition
-                    result = self.storage.query(
+                    result = self.SecureStorage.query(
                         condition["query"],
                         (record["id"],)
                     ).fetchone()
@@ -617,13 +617,13 @@ class DataRetentionManager:
         entity_id = record["id"]
         
         if policy.entity_type == "leads":
-            self.storage.execute("DELETE FROM leads WHERE id = ?", (entity_id,))
+            self.SecureStorage.execute("DELETE FROM leads WHERE id = ?", (entity_id,))
         elif policy.entity_type == "campaigns":
-            self.storage.execute("DELETE FROM campaigns WHERE id = ?", (entity_id,))
+            self.SecureStorage.execute("DELETE FROM campaigns WHERE id = ?", (entity_id,))
         elif policy.entity_type == "email_events":
-            self.storage.execute("DELETE FROM email_events WHERE id = ?", (entity_id,))
+            self.SecureStorage.execute("DELETE FROM email_events WHERE id = ?", (entity_id,))
         elif policy.entity_type == "opt_out_requests":
-            self.storage.execute("DELETE FROM opt_out_requests WHERE id = ?", (entity_id,))
+            self.SecureStorage.execute("DELETE FROM opt_out_requests WHERE id = ?", (entity_id,))
         
         # Log audit
         self._log_audit(
@@ -641,22 +641,22 @@ class DataRetentionManager:
         
         # Get record data
         if policy.entity_type == "leads":
-            record_data = self.storage.query(
+            record_data = self.SecureStorage.query(
                 "SELECT * FROM leads WHERE id = ?",
                 (entity_id,)
             ).fetchone()
         elif policy.entity_type == "campaigns":
-            record_data = self.storage.query(
+            record_data = self.SecureStorage.query(
                 "SELECT * FROM campaigns WHERE id = ?",
                 (entity_id,)
             ).fetchone()
         elif policy.entity_type == "email_events":
-            record_data = self.storage.query(
+            record_data = self.SecureStorage.query(
                 "SELECT * FROM email_events WHERE id = ?",
                 (entity_id,)
             ).fetchone()
         elif policy.entity_type == "opt_out_requests":
-            record_data = self.storage.query(
+            record_data = self.SecureStorage.query(
                 "SELECT * FROM opt_out_requests WHERE id = ?",
                 (entity_id,)
             ).fetchone()
@@ -672,7 +672,7 @@ class DataRetentionManager:
         
         # Archive record
         archive_id = f"archive_{uuid.uuid4().hex}"
-        self.storage.execute(
+        self.SecureStorage.execute(
             """
             INSERT INTO data_archive 
             VALUES (?, ?, ?, ?, ?, ?)
@@ -711,7 +711,7 @@ class DataRetentionManager:
         
         if policy.entity_type == "leads":
             # Anonymize PII fields
-            self.storage.execute(
+            self.SecureStorage.execute(
                 """
                 UPDATE leads 
                 SET name = ?, email = ?, phone = ?, company = ? 
@@ -752,12 +752,12 @@ class DataRetentionManager:
         
         # Update record with flag
         if policy.entity_type == "leads":
-            self.storage.execute(
+            self.SecureStorage.execute(
                 "UPDATE leads SET metadata = ? WHERE id = ?",
                 (json.dumps(record["metadata"]), entity_id)
             )
         elif policy.entity_type == "campaigns":
-            self.storage.execute(
+            self.SecureStorage.execute(
                 "UPDATE campaigns SET metadata = ? WHERE id = ?",
                 (json.dumps(record["metadata"]), entity_id)
             )
@@ -777,7 +777,7 @@ class DataRetentionManager:
         """Log a retention audit entry"""
         audit_id = f"audit_{uuid.uuid4().hex}"
         
-        self.storage.execute(
+        self.SecureStorage.execute(
             """
             INSERT INTO retention_audit 
             VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -816,7 +816,7 @@ class DataRetentionManager:
         sql += " ORDER BY scheduled_at DESC"
         
         # Execute query
-        for row in self.storage.query(sql, params):
+        for row in self.SecureStorage.query(sql, params):
             job = RetentionJob(
                 id=row['id'],
                 policy_id=row['policy_id'],
@@ -855,7 +855,7 @@ class DataRetentionManager:
         sql += " ORDER BY timestamp DESC"
         
         # Execute query
-        for row in self.storage.query(sql, params):
+        for row in self.SecureStorage.query(sql, params):
             audit = RetentionAudit(
                 id=row['id'],
                 policy_id=row['policy_id'],
@@ -907,7 +907,7 @@ class DataRetentionManager:
         # Get job statistics
         job_stats = {}
         for status in RetentionStatus:
-            count = self.storage.query(
+            count = self.SecureStorage.query(
                 "SELECT COUNT(*) FROM retention_jobs WHERE status = ? AND scheduled_at >= ?",
                 (status.value, since.isoformat())
             ).fetchone()[0]
@@ -928,14 +928,14 @@ class DataRetentionManager:
         # Get audit statistics
         audit_stats = {}
         for action in ["delete", "archive", "anonymize", "flag"]:
-            count = self.storage.query(
+            count = self.SecureStorage.query(
                 "SELECT COUNT(*) FROM retention_audit WHERE action = ? AND timestamp >= ?",
                 (action, since.isoformat())
             ).fetchone()[0]
             audit_stats[action] = count
         
         # Get archive statistics
-        archive_count = self.storage.query(
+        archive_count = self.SecureStorage.query(
             "SELECT COUNT(*) FROM data_archive WHERE archived_at >= ?",
             (since.isoformat(),)
         ).fetchone()[0]
@@ -955,7 +955,7 @@ class DataRetentionManager:
         
         # Get expired archives
         expired_archives = []
-        for row in self.storage.query(
+        for row in self.SecureStorage.query(
             "SELECT id, original_table, entity_id FROM data_archive WHERE scheduled_deletion_at < ?",
             (now.isoformat(),)
         ):
@@ -967,7 +967,7 @@ class DataRetentionManager:
         
         # Delete expired archives
         for archive in expired_archives:
-            self.storage.execute(
+            self.SecureStorage.execute(
                 "DELETE FROM data_archive WHERE id = ?",
                 (archive['id'],)
             )

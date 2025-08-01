@@ -9,7 +9,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 import uuid
 
-from engine.storage import Storage
+from engine.SecureStorage import SecureStorage
 from ai.nlp import NLPProcessor
 
 
@@ -133,8 +133,8 @@ class CommunityGuideline:
 
 
 class CommunityManager:
-    def __init__(self, storage: Storage, nlp_processor: NLPProcessor):
-        self.storage = storage
+    def __init__(self, SecureStorage: SecureStorage, nlp_processor: NLPProcessor):
+        self.SecureStorage = SecureStorage
         self.nlp = nlp_processor
         self.logger = logging.getLogger("community_manager")
         self.logger.setLevel(logging.INFO)
@@ -201,7 +201,7 @@ class CommunityManager:
 
     def _initialize_tables(self):
         """Initialize database tables if they don't exist"""
-        self.storage.execute("""
+        self.SecureStorage.execute("""
         CREATE TABLE IF NOT EXISTS community_posts (
             id TEXT PRIMARY KEY,
             title TEXT NOT NULL,
@@ -224,7 +224,7 @@ class CommunityManager:
         )
         """)
 
-        self.storage.execute("""
+        self.SecureStorage.execute("""
         CREATE TABLE IF NOT EXISTS community_comments (
             id TEXT PRIMARY KEY,
             post_id TEXT NOT NULL,
@@ -241,7 +241,7 @@ class CommunityManager:
         )
         """)
 
-        self.storage.execute("""
+        self.SecureStorage.execute("""
         CREATE TABLE IF NOT EXISTS community_user_profiles (
             id TEXT PRIMARY KEY,
             username TEXT UNIQUE NOT NULL,
@@ -261,7 +261,7 @@ class CommunityManager:
         )
         """)
 
-        self.storage.execute("""
+        self.SecureStorage.execute("""
         CREATE TABLE IF NOT EXISTS community_moderation_queue (
             id TEXT PRIMARY KEY,
             content_type TEXT NOT NULL,
@@ -279,7 +279,7 @@ class CommunityManager:
         )
         """)
 
-        self.storage.execute("""
+        self.SecureStorage.execute("""
         CREATE TABLE IF NOT EXISTS community_guidelines (
             id TEXT PRIMARY KEY,
             title TEXT NOT NULL,
@@ -291,7 +291,7 @@ class CommunityManager:
         )
         """)
 
-        self.storage.execute("""
+        self.SecureStorage.execute("""
         CREATE TABLE IF NOT EXISTS community_post_likes (
             post_id TEXT NOT NULL,
             user_id TEXT NOT NULL,
@@ -301,7 +301,7 @@ class CommunityManager:
         )
         """)
 
-        self.storage.execute("""
+        self.SecureStorage.execute("""
         CREATE TABLE IF NOT EXISTS community_comment_likes (
             comment_id TEXT NOT NULL,
             user_id TEXT NOT NULL,
@@ -312,9 +312,9 @@ class CommunityManager:
         """)
 
     def _load_community_data(self):
-        """Load community data from storage"""
+        """Load community data from SecureStorage"""
         # Load posts
-        for row in self.storage.query("SELECT * FROM community_posts WHERE status != 'deleted'"):
+        for row in self.SecureStorage.query("SELECT * FROM community_posts WHERE status != 'deleted'"):
             post = CommunityPost(
                 id=row['id'],
                 title=row['title'],
@@ -338,7 +338,7 @@ class CommunityManager:
             self.posts[post.id] = post
         
         # Load comments
-        for row in self.storage.query("SELECT * FROM community_comments"):
+        for row in self.SecureStorage.query("SELECT * FROM community_comments"):
             comment = Comment(
                 id=row['id'],
                 post_id=row['post_id'],
@@ -355,7 +355,7 @@ class CommunityManager:
             self.comments[comment.id] = comment
         
         # Load user profiles
-        for row in self.storage.query("SELECT * FROM community_user_profiles WHERE is_banned = 0"):
+        for row in self.SecureStorage.query("SELECT * FROM community_user_profiles WHERE is_banned = 0"):
             profile = UserProfile(
                 id=row['id'],
                 username=row['username'],
@@ -376,7 +376,7 @@ class CommunityManager:
             self.user_profiles[profile.id] = profile
         
         # Load moderation queue
-        for row in self.storage.query("SELECT * FROM community_moderation_queue WHERE status = 'pending'"):
+        for row in self.SecureStorage.query("SELECT * FROM community_moderation_queue WHERE status = 'pending'"):
             item = ModerationQueueItem(
                 id=row['id'],
                 content_type=row['content_type'],
@@ -395,7 +395,7 @@ class CommunityManager:
             self.moderation_queue[item.id] = item
         
         # Load guidelines
-        for row in self.storage.query("SELECT * FROM community_guidelines WHERE is_active = 1"):
+        for row in self.SecureStorage.query("SELECT * FROM community_guidelines WHERE is_active = 1"):
             guideline = CommunityGuideline(
                 id=row['id'],
                 title=row['title'],
@@ -422,7 +422,7 @@ class CommunityManager:
         )
         
         # Save to database
-        self.storage.execute(
+        self.SecureStorage.execute(
             """
             INSERT INTO community_user_profiles 
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -467,7 +467,7 @@ class CommunityManager:
         profile.last_active = datetime.now()
         
         # Save to database
-        self.storage.execute(
+        self.SecureStorage.execute(
             """
             UPDATE community_user_profiles 
             SET display_name = ?, bio = ?, avatar_url = ?, role = ?, 
@@ -527,7 +527,7 @@ class CommunityManager:
 
     def _save_post(self, post: CommunityPost):
         """Save a post to database"""
-        self.storage.execute(
+        self.SecureStorage.execute(
             """
             INSERT OR REPLACE INTO community_posts 
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -559,7 +559,7 @@ class CommunityManager:
 
     def _save_user_profile(self, profile: UserProfile):
         """Save a user profile to database"""
-        self.storage.execute(
+        self.SecureStorage.execute(
             """
             UPDATE community_user_profiles 
             SET reputation = ?, post_count = ?, comment_count = ?, 
@@ -622,7 +622,7 @@ class CommunityManager:
 
     def _save_comment(self, comment: Comment):
         """Save a comment to database"""
-        self.storage.execute(
+        self.SecureStorage.execute(
             """
             INSERT OR REPLACE INTO community_comments 
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -675,7 +675,7 @@ class CommunityManager:
         )
         
         # Save to database
-        self.storage.execute(
+        self.SecureStorage.execute(
             """
             INSERT INTO community_moderation_queue 
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -759,7 +759,7 @@ class CommunityManager:
         
         # Execute query
         posts = []
-        for row in self.storage.query(sql, params):
+        for row in self.SecureStorage.query(sql, params):
             post = CommunityPost(
                 id=row['id'],
                 title=row['title'],
@@ -799,7 +799,7 @@ class CommunityManager:
         
         sql += " ORDER BY created_at"
         
-        for row in self.storage.query(sql, params):
+        for row in self.SecureStorage.query(sql, params):
             comment = Comment(
                 id=row['id'],
                 post_id=row['post_id'],
@@ -823,7 +823,7 @@ class CommunityManager:
             return False
         
         # Check if already liked
-        existing = self.storage.query(
+        existing = self.SecureStorage.query(
             "SELECT * FROM community_post_likes WHERE post_id = ? AND user_id = ?",
             (post_id, user_id)
         ).fetchone()
@@ -832,7 +832,7 @@ class CommunityManager:
             return False
         
         # Add like
-        self.storage.execute(
+        self.SecureStorage.execute(
             "INSERT INTO community_post_likes VALUES (?, ?, ?)",
             (post_id, user_id, datetime.now().isoformat())
         )
@@ -855,7 +855,7 @@ class CommunityManager:
             return False
         
         # Check if liked
-        existing = self.storage.query(
+        existing = self.SecureStorage.query(
             "SELECT * FROM community_post_likes WHERE post_id = ? AND user_id = ?",
             (post_id, user_id)
         ).fetchone()
@@ -864,7 +864,7 @@ class CommunityManager:
             return False
         
         # Remove like
-        self.storage.execute(
+        self.SecureStorage.execute(
             "DELETE FROM community_post_likes WHERE post_id = ? AND user_id = ?",
             (post_id, user_id)
         )
@@ -887,7 +887,7 @@ class CommunityManager:
             return False
         
         # Check if already liked
-        existing = self.storage.query(
+        existing = self.SecureStorage.query(
             "SELECT * FROM community_comment_likes WHERE comment_id = ? AND user_id = ?",
             (comment_id, user_id)
         ).fetchone()
@@ -896,7 +896,7 @@ class CommunityManager:
             return False
         
         # Add like
-        self.storage.execute(
+        self.SecureStorage.execute(
             "INSERT INTO community_comment_likes VALUES (?, ?, ?)",
             (comment_id, user_id, datetime.now().isoformat())
         )
@@ -919,7 +919,7 @@ class CommunityManager:
             return False
         
         # Check if liked
-        existing = self.storage.query(
+        existing = self.SecureStorage.query(
             "SELECT * FROM community_comment_likes WHERE comment_id = ? AND user_id = ?",
             (comment_id, user_id)
         ).fetchone()
@@ -928,7 +928,7 @@ class CommunityManager:
             return False
         
         # Remove like
-        self.storage.execute(
+        self.SecureStorage.execute(
             "DELETE FROM community_comment_likes WHERE comment_id = ? AND user_id = ?",
             (comment_id, user_id)
         )
@@ -961,7 +961,7 @@ class CommunityManager:
             return False
         
         # Unaccept any previously accepted answers
-        self.storage.execute(
+        self.SecureStorage.execute(
             "UPDATE community_comments SET is_accepted_answer = 0 WHERE post_id = ?",
             (post_id,)
         )
@@ -1009,7 +1009,7 @@ class CommunityManager:
         """Get items from the moderation queue"""
         items = []
         
-        for row in self.storage.query(
+        for row in self.SecureStorage.query(
             "SELECT * FROM community_moderation_queue WHERE status = ? ORDER BY created_at ASC",
             (status,)
         ):
@@ -1047,7 +1047,7 @@ class CommunityManager:
         item.action_taken = action.value
         item.notes = notes
         
-        self.storage.execute(
+        self.SecureStorage.execute(
             """
             UPDATE community_moderation_queue 
             SET status = ?, resolved_at = ?, resolved_by = ?, action_taken = ?, notes = ?
@@ -1114,7 +1114,7 @@ class CommunityManager:
         )
         
         # Save to database
-        self.storage.execute(
+        self.SecureStorage.execute(
             """
             INSERT INTO community_guidelines 
             VALUES (?, ?, ?, ?, ?, ?)
@@ -1139,37 +1139,37 @@ class CommunityManager:
     def get_community_stats(self) -> Dict:
         """Get community statistics"""
         # Total posts
-        total_posts = self.storage.query(
+        total_posts = self.SecureStorage.query(
             "SELECT COUNT(*) FROM community_posts WHERE status = 'published'"
         ).fetchone()[0]
         
         # Total comments
-        total_comments = self.storage.query(
+        total_comments = self.SecureStorage.query(
             "SELECT COUNT(*) FROM community_comments"
         ).fetchone()[0]
         
         # Total users
-        total_users = self.storage.query(
+        total_users = self.SecureStorage.query(
             "SELECT COUNT(*) FROM community_user_profiles WHERE is_banned = 0"
         ).fetchone()[0]
         
         # Posts by category
         category_counts = {}
-        for row in self.storage.query(
+        for row in self.SecureStorage.query(
             "SELECT category, COUNT(*) as count FROM community_posts WHERE status = 'published' GROUP BY category"
         ):
             category_counts[row['category']] = row['count']
         
         # Posts by type
         type_counts = {}
-        for row in self.storage.query(
+        for row in self.SecureStorage.query(
             "SELECT post_type, COUNT(*) as count FROM community_posts WHERE status = 'published' GROUP BY post_type"
         ):
             type_counts[row['post_type']] = row['count']
         
         # Top contributors
         top_contributors = []
-        for row in self.storage.query(
+        for row in self.SecureStorage.query(
             """
             SELECT author_id, author_name, COUNT(*) as post_count
             FROM community_posts 
@@ -1226,7 +1226,7 @@ class CommunityManager:
         
         # Get posts with high engagement
         trending_posts = []
-        for row in self.storage.query(
+        for row in self.SecureStorage.query(
             """
             SELECT * FROM community_posts 
             WHERE status = 'published' AND created_at >= ?

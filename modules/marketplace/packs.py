@@ -17,7 +17,7 @@ import pandas as pd
 from fastapi import UploadFile
 from sqlalchemy import desc
 
-from engine.storage import Storage
+from engine.SecureStorage import SecureStorage
 from engine.license import LicenseManager
 from ai.nlp import NLPProcessor
 
@@ -97,8 +97,8 @@ class PackPurchase:
 
 
 class MarketplaceEngine:
-    def __init__(self, storage: Storage, license_manager: LicenseManager, nlp_processor: NLPProcessor):
-        self.storage = storage
+    def __init__(self, SecureStorage: SecureStorage, license_manager: LicenseManager, nlp_processor: NLPProcessor):
+        self.SecureStorage = SecureStorage
         self.license_manager = license_manager
         self.nlp = nlp_processor
         self.logger = logging.getLogger("marketplace_engine")
@@ -113,11 +113,11 @@ class MarketplaceEngine:
         # Initialize database tables
         self._initialize_tables()
         
-        # Load packs from storage
+        # Load packs from SecureStorage
         self.packs: Dict[str, LeadPack] = {}
         self._load_packs()
         
-        # Set up file storage
+        # Set up file SecureStorage
         self.pack_storage_path = Path("resources/marketplace/packs")
         self.pack_storage_path.mkdir(parents=True, exist_ok=True)
         
@@ -142,7 +142,7 @@ class MarketplaceEngine:
 
     def _initialize_tables(self):
         """Initialize database tables if they don't exist"""
-        self.storage.execute("""
+        self.SecureStorage.execute("""
         CREATE TABLE IF NOT EXISTS lead_packs (
             id TEXT PRIMARY KEY,
             name TEXT NOT NULL,
@@ -169,7 +169,7 @@ class MarketplaceEngine:
         )
         """)
 
-        self.storage.execute("""
+        self.SecureStorage.execute("""
         CREATE TABLE IF NOT EXISTS pack_reviews (
             id TEXT PRIMARY KEY,
             pack_id TEXT NOT NULL,
@@ -183,7 +183,7 @@ class MarketplaceEngine:
         )
         """)
 
-        self.storage.execute("""
+        self.SecureStorage.execute("""
         CREATE TABLE IF NOT EXISTS pack_purchases (
             id TEXT PRIMARY KEY,
             pack_id TEXT NOT NULL,
@@ -197,7 +197,7 @@ class MarketplaceEngine:
         )
         """)
 
-        self.storage.execute("""
+        self.SecureStorage.execute("""
         CREATE TABLE IF NOT EXISTS pack_downloads (
             id TEXT PRIMARY KEY,
             pack_id TEXT NOT NULL,
@@ -209,8 +209,8 @@ class MarketplaceEngine:
         """)
 
     def _load_packs(self):
-        """Load lead packs from storage"""
-        for row in self.storage.query("SELECT * FROM lead_packs"):
+        """Load lead packs from SecureStorage"""
+        for row in self.SecureStorage.query("SELECT * FROM lead_packs"):
             pack = LeadPack(
                 id=row['id'],
                 name=row['name'],
@@ -292,7 +292,7 @@ class MarketplaceEngine:
             return False
         
         # Delete from database
-        self.storage.execute("DELETE FROM lead_packs WHERE id = ?", (pack_id,))
+        self.SecureStorage.execute("DELETE FROM lead_packs WHERE id = ?", (pack_id,))
         
         # Delete from in-memory cache
         del self.packs[pack_id]
@@ -307,7 +307,7 @@ class MarketplaceEngine:
 
     def _save_pack(self, pack: LeadPack):
         """Save a lead pack to database"""
-        self.storage.execute(
+        self.SecureStorage.execute(
             """
             INSERT OR REPLACE INTO lead_packs 
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -373,7 +373,7 @@ class MarketplaceEngine:
         
         # Check if user has purchased the pack or if it's free
         if pack.price > 0:
-            purchase = self.storage.query(
+            purchase = self.SecureStorage.query(
                 "SELECT * FROM pack_purchases WHERE pack_id = ? AND user_id = ? AND status = ?",
                 (pack_id, user_id, PurchaseStatus.COMPLETED.value)
             ).fetchone()
@@ -407,7 +407,7 @@ class MarketplaceEngine:
         """Record a pack download"""
         download_id = f"dl_{uuid.uuid4().hex}"
         
-        self.storage.execute(
+        self.SecureStorage.execute(
             """
             INSERT INTO pack_downloads 
             VALUES (?, ?, ?, ?)
@@ -429,7 +429,7 @@ class MarketplaceEngine:
         pack = self.packs[pack_id]
         
         # Check if already purchased
-        existing = self.storage.query(
+        existing = self.SecureStorage.query(
             "SELECT * FROM pack_purchases WHERE pack_id = ? AND user_id = ? AND status = ?",
             (pack_id, user_id, PurchaseStatus.COMPLETED.value)
         ).fetchone()
@@ -449,7 +449,7 @@ class MarketplaceEngine:
         )
         
         # Save to database
-        self.storage.execute(
+        self.SecureStorage.execute(
             """
             INSERT INTO pack_purchases 
             VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -470,7 +470,7 @@ class MarketplaceEngine:
         purchase.status = PurchaseStatus.COMPLETED
         purchase.completed_at = datetime.now()
         
-        self.storage.execute(
+        self.SecureStorage.execute(
             """
             UPDATE pack_purchases 
             SET status = ?, completed_at = ? 
@@ -496,7 +496,7 @@ class MarketplaceEngine:
             return None
         
         # Check if user already reviewed this pack
-        existing = self.storage.query(
+        existing = self.SecureStorage.query(
             "SELECT * FROM pack_reviews WHERE pack_id = ? AND user_id = ?",
             (pack_id, user_id)
         ).fetchone()
@@ -504,7 +504,7 @@ class MarketplaceEngine:
         if existing:
             # Update existing review
             review_id = existing['id']
-            self.storage.execute(
+            self.SecureStorage.execute(
                 """
                 UPDATE pack_reviews 
                 SET rating = ?, title = ?, content = ?, updated_at = ? 
@@ -521,7 +521,7 @@ class MarketplaceEngine:
         else:
             # Create new review
             review_id = f"rev_{uuid.uuid4().hex}"
-            self.storage.execute(
+            self.SecureStorage.execute(
                 """
                 INSERT INTO pack_reviews 
                 VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -547,7 +547,7 @@ class MarketplaceEngine:
     def _update_pack_rating(self, pack_id: str):
         """Update the average rating for a pack"""
         # Calculate average rating
-        result = self.storage.query(
+        result = self.SecureStorage.query(
             "SELECT AVG(rating) as avg_rating FROM pack_reviews WHERE pack_id = ?",
             (pack_id,)
         ).fetchone()
@@ -561,7 +561,7 @@ class MarketplaceEngine:
 
     def get_review(self, review_id: str) -> Optional[PackReview]:
         """Get a review by ID"""
-        row = self.storage.query(
+        row = self.SecureStorage.query(
             "SELECT * FROM pack_reviews WHERE id = ?",
             (review_id,)
         ).fetchone()
@@ -584,7 +584,7 @@ class MarketplaceEngine:
         """Get all reviews for a pack"""
         reviews = []
         
-        for row in self.storage.query(
+        for row in self.SecureStorage.query(
             "SELECT * FROM pack_reviews WHERE pack_id = ? ORDER BY created_at DESC",
             (pack_id,)
         ):
@@ -664,7 +664,7 @@ class MarketplaceEngine:
         
         # Execute query
         packs = []
-        for row in self.storage.query(sql, params):
+        for row in self.SecureStorage.query(sql, params):
             pack = LeadPack(
                 id=row['id'],
                 name=row['name'],
@@ -702,7 +702,7 @@ class MarketplaceEngine:
         packs = []
         
         # Get packs created by user
-        for row in self.storage.query(
+        for row in self.SecureStorage.query(
             "SELECT * FROM lead_packs WHERE author_id = ? ORDER BY created_at DESC",
             (user_id,)
         ):
@@ -735,7 +735,7 @@ class MarketplaceEngine:
         # Get packs purchased by user
         if include_purchased:
             purchased_pack_ids = set()
-            for row in self.storage.query(
+            for row in self.SecureStorage.query(
                 "SELECT pack_id FROM pack_purchases WHERE user_id = ? AND status = ?",
                 (user_id, PurchaseStatus.COMPLETED.value)
             ):
@@ -753,7 +753,7 @@ class MarketplaceEngine:
         
         # Get pack IDs sorted by popularity
         popular_pack_ids = []
-        for row in self.storage.query(
+        for row in self.SecureStorage.query(
             """
             SELECT p.id, 
                    (p.download_count + p.purchase_count) as popularity_score
@@ -780,7 +780,7 @@ class MarketplaceEngine:
         purchased_categories = set()
         purchased_tags = set()
         
-        for row in self.storage.query(
+        for row in self.SecureStorage.query(
             """
             SELECT p.category, p.tags
             FROM pack_purchases pp
@@ -798,7 +798,7 @@ class MarketplaceEngine:
         
         # Exclude packs already purchased
         purchased_pack_ids = set()
-        for row in self.storage.query(
+        for row in self.SecureStorage.query(
             "SELECT pack_id FROM pack_purchases WHERE user_id = ? AND status = ?",
             (user_id, PurchaseStatus.COMPLETED.value)
         ):
@@ -806,7 +806,7 @@ class MarketplaceEngine:
         
         # Find packs with matching categories
         for category in purchased_categories:
-            for row in self.storage.query(
+            for row in self.SecureStorage.query(
                 """
                 SELECT * FROM lead_packs 
                 WHERE category = ? AND status = ? AND id NOT IN ({})
@@ -843,7 +843,7 @@ class MarketplaceEngine:
         
         # Find packs with matching tags
         for tag in purchased_tags:
-            for row in self.storage.query(
+            for row in self.SecureStorage.query(
                 """
                 SELECT * FROM lead_packs 
                 WHERE tags LIKE ? AND status = ? AND id NOT IN ({})
@@ -889,36 +889,36 @@ class MarketplaceEngine:
     def get_marketplace_stats(self) -> Dict:
         """Get marketplace statistics"""
         # Total packs
-        total_packs = self.storage.query(
+        total_packs = self.SecureStorage.query(
             "SELECT COUNT(*) FROM lead_packs"
         ).fetchone()[0]
         
         # Published packs
-        published_packs = self.storage.query(
+        published_packs = self.SecureStorage.query(
             "SELECT COUNT(*) FROM lead_packs WHERE status = ?",
             (PackStatus.PUBLISHED.value,)
         ).fetchone()[0]
         
         # Total downloads
-        total_downloads = self.storage.query(
+        total_downloads = self.SecureStorage.query(
             "SELECT SUM(download_count) FROM lead_packs"
         ).fetchone()[0] or 0
         
         # Total purchases
-        total_purchases = self.storage.query(
+        total_purchases = self.SecureStorage.query(
             "SELECT COUNT(*) FROM pack_purchases WHERE status = ?",
             (PurchaseStatus.COMPLETED.value,)
         ).fetchone()[0]
         
         # Total revenue
-        total_revenue = self.storage.query(
+        total_revenue = self.SecureStorage.query(
             "SELECT SUM(price) FROM pack_purchases WHERE status = ?",
             (PurchaseStatus.COMPLETED.value,)
         ).fetchone()[0] or 0
         
         # Packs by category
         category_counts = {}
-        for row in self.storage.query(
+        for row in self.SecureStorage.query(
             "SELECT category, COUNT(*) as count FROM lead_packs WHERE status = ? GROUP BY category",
             (PackStatus.PUBLISHED.value,)
         ):
@@ -926,7 +926,7 @@ class MarketplaceEngine:
         
         # Packs by type
         type_counts = {}
-        for row in self.storage.query(
+        for row in self.SecureStorage.query(
             "SELECT pack_type, COUNT(*) as count FROM lead_packs WHERE status = ? GROUP BY pack_type",
             (PackStatus.PUBLISHED.value,)
         ):
@@ -1012,7 +1012,7 @@ class MarketplaceEngine:
         """Get packs pending review"""
         pending_packs = []
         
-        for row in self.storage.query(
+        for row in self.SecureStorage.query(
             "SELECT * FROM lead_packs WHERE status = ? ORDER BY created_at ASC",
             (PackStatus.PENDING_REVIEW.value,)
         ):

@@ -16,7 +16,7 @@ import pandas as pd
 from aiohttp import ClientSession, ClientTimeout
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 
-from engine.storage import Storage
+from engine.SecureStorage import SecureStorage
 from engine.license import LicenseManager
 from ai.nlp import NLPProcessor
 
@@ -102,8 +102,8 @@ class SyncResult:
 
 
 class SyncManager:
-    def __init__(self, storage: Storage, license_manager: LicenseManager, nlp_processor: NLPProcessor):
-        self.storage = storage
+    def __init__(self, SecureStorage: SecureStorage, license_manager: LicenseManager, nlp_processor: NLPProcessor):
+        self.SecureStorage = SecureStorage
         self.license_manager = license_manager
         self.nlp = nlp_processor
         self.logger = logging.getLogger("sync_manager")
@@ -145,7 +145,7 @@ class SyncManager:
 
     def _initialize_tables(self):
         """Initialize database tables if they don't exist"""
-        self.storage.execute("""
+        self.SecureStorage.execute("""
         CREATE TABLE IF NOT EXISTS sync_configs (
             id TEXT PRIMARY KEY,
             platform TEXT NOT NULL,
@@ -161,7 +161,7 @@ class SyncManager:
         )
         """)
 
-        self.storage.execute("""
+        self.SecureStorage.execute("""
         CREATE TABLE IF NOT EXISTS sync_operations (
             id TEXT PRIMARY KEY,
             config_id TEXT NOT NULL,
@@ -178,7 +178,7 @@ class SyncManager:
         )
         """)
 
-        self.storage.execute("""
+        self.SecureStorage.execute("""
         CREATE TABLE IF NOT EXISTS sync_results (
             id TEXT PRIMARY KEY,
             config_id TEXT NOT NULL,
@@ -196,7 +196,7 @@ class SyncManager:
         )
         """)
 
-        self.storage.execute("""
+        self.SecureStorage.execute("""
         CREATE TABLE IF NOT EXISTS sync_field_mappings (
             id TEXT PRIMARY KEY,
             platform TEXT NOT NULL,
@@ -287,8 +287,8 @@ class SyncManager:
         }
 
     def _load_sync_configs(self):
-        """Load sync configurations from storage"""
-        for row in self.storage.query("SELECT * FROM sync_configs WHERE is_active = 1"):
+        """Load sync configurations from SecureStorage"""
+        for row in self.SecureStorage.query("SELECT * FROM sync_configs WHERE is_active = 1"):
             config = SyncConfig(
                 id=row['id'],
                 platform=SyncPlatform(row['platform']),
@@ -320,7 +320,7 @@ class SyncManager:
         )
         
         # Save to database
-        self.storage.execute(
+        self.SecureStorage.execute(
             """
             INSERT INTO sync_configs 
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -365,7 +365,7 @@ class SyncManager:
         config.updated_at = datetime.now()
         
         # Update in database
-        self.storage.execute(
+        self.SecureStorage.execute(
             """
             UPDATE sync_configs 
             SET platform = ?, direction = ?, entities = ?, auth_config = ?, 
@@ -409,7 +409,7 @@ class SyncManager:
             del self.active_syncs[config_id]
         
         # Deactivate in database
-        self.storage.execute(
+        self.SecureStorage.execute(
             "UPDATE sync_configs SET is_active = 0 WHERE id = ?",
             (config_id,)
         )
@@ -434,7 +434,7 @@ class SyncManager:
         config.next_sync = next_sync
         
         # Update in database
-        self.storage.execute(
+        self.SecureStorage.execute(
             "UPDATE sync_configs SET next_sync = ? WHERE id = ?",
             (next_sync.isoformat(), config.id)
         )
@@ -491,7 +491,7 @@ class SyncManager:
             config.last_sync = datetime.now()
             config.next_sync = config.last_sync + timedelta(seconds=config.sync_interval)
             
-            self.storage.execute(
+            self.SecureStorage.execute(
                 """
                 UPDATE sync_configs 
                 SET last_sync = ?, next_sync = ? 
@@ -687,7 +687,7 @@ class SyncManager:
         
         # Get custom mappings from database
         custom_mappings = {}
-        for row in self.storage.query(
+        for row in self.SecureStorage.query(
             """
             SELECT drn_field, platform_field, transform_type, transform_config 
             FROM sync_field_mappings 
@@ -711,7 +711,7 @@ class SyncManager:
         """Apply transformations to record data"""
         # Get transformations from database
         transformations = {}
-        for row in self.storage.query(
+        for row in self.SecureStorage.query(
             """
             SELECT drn_field, transform_type, transform_config 
             FROM sync_field_mappings 
@@ -767,7 +767,7 @@ class SyncManager:
         lead_id = lead_data.get("id")
         
         # Check if lead already exists
-        existing = self.storage.query(
+        existing = self.SecureStorage.query(
             "SELECT id FROM leads WHERE id = ? OR email = ?",
             (lead_id, lead_data.get("email"))
         ).fetchone()
@@ -784,14 +784,14 @@ class SyncManager:
             
             if update_fields:
                 update_values.append(existing['id'])
-                self.storage.execute(
+                self.SecureStorage.execute(
                     f"UPDATE leads SET {', '.join(update_fields)} WHERE id = ?",
                     update_values
                 )
         else:
             # Create new lead
             lead_id = f"lead_{uuid.uuid4().hex}"
-            self.storage.execute(
+            self.SecureStorage.execute(
                 """
                 INSERT INTO leads 
                 (id, name, email, company, job_title, phone, industry, source, metadata, created_at)
@@ -816,7 +816,7 @@ class SyncManager:
         campaign_id = campaign_data.get("id")
         
         # Check if campaign already exists
-        existing = self.storage.query(
+        existing = self.SecureStorage.query(
             "SELECT id FROM campaigns WHERE id = ?",
             (campaign_id,)
         ).fetchone()
@@ -833,14 +833,14 @@ class SyncManager:
             
             if update_fields:
                 update_values.append(existing['id'])
-                self.storage.execute(
+                self.SecureStorage.execute(
                     f"UPDATE campaigns SET {', '.join(update_fields)} WHERE id = ?",
                     update_values
                 )
         else:
             # Create new campaign
             campaign_id = f"campaign_{uuid.uuid4().hex}"
-            self.storage.execute(
+            self.SecureStorage.execute(
                 """
                 INSERT INTO campaigns 
                 (id, name, description, template_id, target_audience, schedule, metadata, created_at)
@@ -863,14 +863,14 @@ class SyncManager:
         email_id = email_data.get("id")
         
         # Check if email already exists
-        existing = self.storage.query(
+        existing = self.SecureStorage.query(
             "SELECT id FROM email_events WHERE id = ?",
             (email_id,)
         ).fetchone()
         
         if not existing:
             # Create new email event
-            self.storage.execute(
+            self.SecureStorage.execute(
                 """
                 INSERT INTO email_events 
                 (id, campaign_id, lead_id, event_type, timestamp, metadata)
@@ -891,7 +891,7 @@ class SyncManager:
         data = []
         
         if entity_type == SyncEntityType.LEADS:
-            for row in self.storage.query("SELECT * FROM leads"):
+            for row in self.SecureStorage.query("SELECT * FROM leads"):
                 data.append({
                     "id": row['id'],
                     "name": row['name'],
@@ -905,7 +905,7 @@ class SyncManager:
                     "metadata": json.loads(row['metadata']) if row['metadata'] else {}
                 })
         elif entity_type == SyncEntityType.CAMPAIGNS:
-            for row in self.storage.query("SELECT * FROM campaigns"):
+            for row in self.SecureStorage.query("SELECT * FROM campaigns"):
                 data.append({
                     "id": row['id'],
                     "name": row['name'],
@@ -916,7 +916,7 @@ class SyncManager:
                     "metadata": json.loads(row['metadata']) if row['metadata'] else {}
                 })
         elif entity_type == SyncEntityType.EMAILS:
-            for row in self.storage.query("SELECT * FROM email_events"):
+            for row in self.SecureStorage.query("SELECT * FROM email_events"):
                 data.append({
                     "id": row['id'],
                     "campaign_id": row['campaign_id'],
@@ -930,7 +930,7 @@ class SyncManager:
 
     def _save_sync_result(self, result: SyncResult):
         """Save sync result to database"""
-        self.storage.execute(
+        self.SecureStorage.execute(
             """
             INSERT INTO sync_results 
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -968,7 +968,7 @@ class SyncManager:
         
         query += " ORDER BY started_at DESC"
         
-        for row in self.storage.query(query, params):
+        for row in self.SecureStorage.query(query, params):
             result = SyncResult(
                 config_id=row['config_id'],
                 platform=SyncPlatform(row['platform']),
@@ -994,7 +994,7 @@ class SyncManager:
         platform_counts = {platform.value: 0 for platform in SyncPlatform}
         total_syncs = 0
         
-        for row in self.storage.query(
+        for row in self.SecureStorage.query(
             "SELECT platform, COUNT(*) as count FROM sync_results WHERE started_at >= ? GROUP BY platform",
             (since.isoformat(),)
         ):
@@ -1002,7 +1002,7 @@ class SyncManager:
             total_syncs += row['count']
         
         # Get success rate
-        success_count = self.storage.query(
+        success_count = self.SecureStorage.query(
             "SELECT COUNT(*) FROM sync_results WHERE status = 'success' AND started_at >= ?",
             (since.isoformat(),)
         ).fetchone()[0] or 0
@@ -1010,7 +1010,7 @@ class SyncManager:
         success_rate = (success_count / total_syncs) if total_syncs > 0 else 0
         
         # Get average records per sync
-        avg_records = self.storage.query(
+        avg_records = self.SecureStorage.query(
             "SELECT AVG(total_records) FROM sync_results WHERE started_at >= ?",
             (since.isoformat(),)
         ).fetchone()[0] or 0
@@ -1028,7 +1028,7 @@ class SyncManager:
         """Add a custom field mapping"""
         mapping_id = f"mapping_{uuid.uuid4().hex}"
         
-        self.storage.execute(
+        self.SecureStorage.execute(
             """
             INSERT INTO sync_field_mappings 
             VALUES (?, ?, ?, ?, ?, ?)
@@ -1049,7 +1049,7 @@ class SyncManager:
 
     def remove_field_mapping(self, mapping_id: str):
         """Remove a field mapping"""
-        self.storage.execute(
+        self.SecureStorage.execute(
             "DELETE FROM sync_field_mappings WHERE id = ?",
             (mapping_id,)
         )

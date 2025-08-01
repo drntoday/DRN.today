@@ -1,322 +1,490 @@
-#!/usr/bin/env python3
-"""
-DRN.today - Enterprise-Grade Lead Generation Platform
-Lead Enrichment - Persona Stitching Module
-Production-Ready Implementation
-"""
-
-import asyncio
-import logging
-import re
-import time
 import json
-import uuid
-from datetime import datetime, timedelta
+import logging
 from pathlib import Path
-from typing import Dict, List, Optional, Any, Tuple, Union
-from dataclasses import dataclass, field
-import numpy as np
+from typing import Dict, List, Optional, Tuple
 import pandas as pd
-from collections import defaultdict, Counter
-import hashlib
-import aiohttp
-import tldextract
+from PyQt5.QtCore import QObject, pyqtSignal
 
-# Core system imports
-from engine.orchestrator import BaseModule
-from engine.event_system import EventBus
-from engine.storage import SecureStorage
-from engine.license import LicenseManager
-from home.config import get_config
-
-# AI imports
 from ai.nlp import NLPProcessor
 from ai.scoring import LeadScorer
+from engine.storage import SecureStorage
+from engine.license import LicenseManager
 
-# Initialize persona stitcher logger
 logger = logging.getLogger(__name__)
 
-@dataclass
-class PersonaProfile:
-    """Enriched persona profile data structure"""
-    uuid: str
-    base_lead_uuid: str
-    resolved_identities: List[str] = field(default_factory=list)
-    job_seniority: Optional[str] = None
-    budget_range: Optional[str] = None
-    urgency_level: Optional[str] = None
-    industry_fit: Optional[str] = None
-    authority_level: Optional[str] = None
-    confidence_score: float = 0.0
-    dna_tags: Dict[str, List[str]] = field(default_factory=dict)
-    custom_segments: List[str] = field(default_factory=list)
-    social_footprint: Dict[str, str] = field(default_factory=dict)
-    company_insights: Dict[str, Any] = field(default_factory=dict)
-    behavioral_signals: Dict[str, Any] = field(default_factory=dict)
-    enrichment_metadata: Dict[str, Any] = field(default_factory=dict)
-    last_updated: float = field(default_factory=time.time)
-
-class PersonaStitcherConfig:
-    """Configuration for the persona stitcher module"""
-    def __init__(self, config_dict: Dict[str, Any]):
-        self.ai_config = config_dict.get("ai", {})
-        self.scraping_config = config_dict.get("scraping", {})
-        
-        # AI settings
-        self.tinybert_model_path = self.ai_config.get("tinybert_model_path")
-        self.scoring_threshold = self.ai_config.get("scoring_threshold", 0.75)
-        self.batch_size = self.ai_config.get("batch_size", 32)
-        
-        # Enrichment settings
-        self.identity_sources = self.scraping_config.get("identity_sources", [
-            "linkedin", "twitter", "github", "crunchbase", "angellist"
-        ])
-        self.enrichment_timeout = self.scraping_config.get("enrichment_timeout", 30)
-        self.max_concurrent_enrichments = self.scraping_config.get("max_concurrent_enrichments", 5)
-        
-        # DNA tagging settings
-        self.dna_dimensions = [
-            "seniority", "industry", "company_size", "budget", "urgency",
-            "authority", "tech_stack", "location", "role", "department"
-        ]
-        
-        # Persona segments
-        self.predefined_segments = [
-            "CTOs in FinTech startups with Series A funding",
-            "Marketing Directors at SaaS companies with 50-200 employees",
-            "VPs of Engineering in AI/ML companies",
-            "Product Managers at B2B companies with enterprise clients",
-            "Sales Leaders at high-growth startups"
-        ]
-
-class PersonaStitcher(BaseModule):
-    """Production-ready persona stitching and lead enrichment system"""
+class PersonaStitcher(QObject):
+    """Cross-platform identity resolution and lead enrichment"""
     
-    def __init__(self, name: str, event_bus: EventBus, storage: SecureStorage, 
-                 license_manager: LicenseManager, config: Dict[str, Any]):
-        super().__init__(name, event_bus, storage, license_manager, config)
-        self.config = PersonaStitcherConfig(config)
-        self.nlp_processor: Optional[NLPProcessor] = None
-        self.lead_scorer: Optional[LeadScorer] = None
-        self.enrichment_cache: Dict[str, PersonaProfile] = {}
-        self.session_stats = {
-            "leads_enriched": 0,
-            "identities_resolved": 0,
-            "ai_inferences": 0,
-            "dna_tags_created": 0,
-            "custom_segments_created": 0,
-            "successful": 0,
-            "failed": 0
-        }
-        self.semaphore = asyncio.Semaphore(self.config.max_concurrent_enrichments)
-        
-    def _setup_event_handlers(self):
-        """Setup event handlers for enrichment requests"""
-        self.event_bus.subscribe("persona_stitcher.enrich", self._handle_enrichment_request)
-        self.event_bus.subscribe("persona_stitcher.resolve", self._handle_resolution_request)
-        self.event_bus.subscribe("persona_stitcher.segment", self._handle_segmentation_request)
-        self.event_bus.subscribe("persona_stitcher.status", self._handle_status_request)
-        
-    def _validate_requirements(self):
-        """Validate module requirements and dependencies"""
-        # Check if AI models are available
-        if not Path(self.config.tinybert_model_path).exists():
-            raise FileNotFoundError(f"TinyBERT model not found: {self.config.tinybert_model_path}")
-            
-    async def _start_services(self):
-        """Start persona stitcher services"""
-        # Initialize AI components
-        self.nlp_processor = NLPProcessor(self.config.tinybert_model_path)
+    # Signals for UI updates
+    enrichment_progress = pyqtSignal(int)
+    enrichment_complete = pyqtSignal(list)
+    error_occurred = pyqtSignal(str)
+    
+    def __init__(self):
+        super().__init__()
+        self.nlp_processor = NLPProcessor()
         self.lead_scorer = LeadScorer()
+        self.storage = SecureStorage()
+        self.license_manager = LicenseManager()
         
-        logger.info("Persona stitcher services started successfully")
-    
-    async def _stop_services(self):
-        """Stop persona stitcher services"""
-        logger.info("Persona stitcher services stopped")
-    
-    def _perform_maintenance(self):
-        """Perform periodic maintenance tasks"""
-        # Clean old cache entries
-        current_time = time.time()
-        expired_keys = [
-            key for key, profile in self.enrichment_cache.items()
-            if current_time - profile.last_updated > 86400  # 24 hours
-        ]
-        for key in expired_keys:
-            del self.enrichment_cache[key]
+        # Identity resolution thresholds
+        self.name_similarity_threshold = 0.85
+        self.domain_similarity_threshold = 0.9
+        self.social_similarity_threshold = 0.7
         
-        # Log session stats
-        logger.debug(f"Persona stitcher stats: {self.session_stats}")
-    
-    async def _handle_enrichment_request(self, event_type: str, data: Dict[str, Any]):
-        """Handle lead enrichment requests"""
+    def enrich(self, input_file: str, enrichment_types: List[str]) -> List[Dict]:
+        """Enrich leads with additional data"""
         try:
-            lead_uuid = data.get("lead_uuid")
-            lead_data = data.get("lead_data")
+            # Load leads from input file
+            leads = self._load_leads(input_file)
             
-            if not lead_uuid or not lead_data:
-                logger.warning("Invalid enrichment request: missing lead data")
-                return
+            # Process each enrichment type
+            for enrichment_type in enrichment_types:
+                logger.info(f"Starting enrichment: {enrichment_type}")
+                
+                if enrichment_type == 'social':
+                    leads = self._enrich_social_profiles(leads)
+                elif enrichment_type == 'company':
+                    leads = self._enrich_company_data(leads)
+                elif enrichment_type == 'funding':
+                    leads = self._enrich_funding_data(leads)
+                elif enrichment_type == 'technologies':
+                    leads = self._enrich_technologies(leads)
+                elif enrichment_type == 'contacts':
+                    leads = self._enrich_contacts(leads)
+                
+                # Update progress
+                progress = (enrichment_types.index(enrichment_type) + 1) / len(enrichment_types) * 100
+                self.enrichment_progress.emit(int(progress))
             
-            # Create enrichment task
-            task = asyncio.create_task(
-                self._enrich_lead(lead_uuid, lead_data),
-                name=f"enrich_{lead_uuid}"
+            # Save enriched leads
+            self._save_enriched_leads(leads, input_file)
+            
+            # Emit completion signal
+            self.enrichment_complete.emit(leads)
+            
+            return leads
+            
+        except Exception as e:
+            logger.error(f"Error during lead enrichment: {str(e)}", exc_info=True)
+            self.error_occurred.emit(f"Enrichment failed: {str(e)}")
+            raise
+    
+    def resolve_identity(self, lead_data: Dict) -> Dict:
+        """Resolve identity across multiple platforms"""
+        try:
+            resolved_lead = lead_data.copy()
+            
+            # Extract key identifiers
+            name = lead_data.get('name', '').lower()
+            domain = lead_data.get('domain', '').lower()
+            email = lead_data.get('email', '').lower()
+            
+            # Find matching leads in storage
+            existing_leads = self.storage.find_leads(
+                filters={'name': name, 'domain': domain}
             )
             
-            # Set up callback for completion
-            task.add_done_callback(lambda t: self._enrichment_completed(lead_uuid, t))
+            if existing_leads:
+                # Merge with existing lead
+                resolved_lead = self._merge_leads(resolved_lead, existing_leads[0])
+            
+            # Perform social profile resolution
+            resolved_lead = self._resolve_social_profiles(resolved_lead)
+            
+            # Add AI-inferred insights
+            resolved_lead = self._add_ai_insights(resolved_lead)
+            
+            return resolved_lead
             
         except Exception as e:
-            logger.error(f"Error handling enrichment request: {str(e)}", exc_info=True)
+            logger.error(f"Error resolving identity: {str(e)}", exc_info=True)
+            raise
     
-    async def _handle_resolution_request(self, event_type: str, data: Dict[str, Any]):
-        """Handle identity resolution requests"""
+    def _load_leads(self, input_file: str) -> List[Dict]:
+        """Load leads from input file"""
+        file_path = Path(input_file)
+        
+        if not file_path.exists():
+            raise FileNotFoundError(f"Input file not found: {input_file}")
+        
+        if file_path.suffix.lower() == '.json':
+            with open(file_path, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        elif file_path.suffix.lower() == '.csv':
+            df = pd.read_csv(file_path)
+            return df.to_dict('records')
+        else:
+            raise ValueError(f"Unsupported file format: {file_path.suffix}")
+    
+    def _save_enriched_leads(self, leads: List[Dict], original_file: str):
+        """Save enriched leads to storage"""
         try:
-            identifiers = data.get("identifiers", [])
+            # Create enriched filename
+            original_path = Path(original_file)
+            enriched_path = original_path.parent / f"{original_path.stem}_enriched{original_path.suffix}"
             
-            if not identifiers:
-                logger.warning("Invalid resolution request: missing identifiers")
-                return
+            # Save based on file type
+            if original_path.suffix.lower() == '.json':
+                with open(enriched_path, 'w', encoding='utf-8') as f:
+                    json.dump(leads, f, indent=2, ensure_ascii=False)
+            elif original_path.suffix.lower() == '.csv':
+                df = pd.DataFrame(leads)
+                df.to_csv(enriched_path, index=False)
             
-            # Create resolution task
-            task = asyncio.create_task(
-                self._resolve_identities(identifiers),
-                name=f"resolve_{hash(str(identifiers))}"
-            )
+            # Also save to database
+            self.storage.save_leads(leads)
             
-            # Set up callback for completion
-            task.add_done_callback(lambda t: self._resolution_completed(identifiers, t))
-            
-        except Exception as e:
-            logger.error(f"Error handling resolution request: {str(e)}", exc_info=True)
-    
-    async def _handle_segmentation_request(self, event_type: str, data: Dict[str, Any]):
-        """Handle persona segmentation requests"""
-        try:
-            segment_definition = data.get("segment_definition")
-            lead_uuids = data.get("lead_uuids", [])
-            
-            if not segment_definition:
-                logger.warning("Invalid segmentation request: missing segment definition")
-                return
-            
-            # Create segmentation task
-            task = asyncio.create_task(
-                self._create_custom_segment(segment_definition, lead_uuids),
-                name=f"segment_{hash(str(segment_definition))}"
-            )
-            
-            # Set up callback for completion
-            task.add_done_callback(lambda t: self._segmentation_completed(segment_definition, t))
+            logger.info(f"Saved enriched leads to {enriched_path}")
             
         except Exception as e:
-            logger.error(f"Error handling segmentation request: {str(e)}", exc_info=True)
+            logger.error(f"Error saving enriched leads: {str(e)}", exc_info=True)
+            raise
     
-    async def _handle_status_request(self, event_type: str, data: Dict[str, Any]):
-        """Handle status requests"""
-        status = {
-            "session_stats": self.session_stats,
-            "cache_size": len(self.enrichment_cache),
-            "nlp_available": self.nlp_processor is not None,
-            "active_enrichments": self.semaphore._value
-        }
-        self.event_bus.publish("persona_stitcher.status.response", status)
-    
-    def _enrichment_completed(self, lead_uuid: str, task: asyncio.Task):
-        """Callback for when enrichment task completes"""
-        try:
-            if task.cancelled():
-                logger.info(f"Enrichment task cancelled: {lead_uuid}")
-                return
-            
-            result = task.result()
-            self.event_bus.publish("persona_stitcher.enrichment.completed", {
-                "lead_uuid": lead_uuid,
-                "result": result
-            })
-            
-        except Exception as e:
-            logger.error(f"Error in enrichment completion: {str(e)}", exc_info=True)
-    
-    def _resolution_completed(self, identifiers: List[str], task: asyncio.Task):
-        """Callback for when resolution task completes"""
-        try:
-            if task.cancelled():
-                logger.info(f"Resolution task cancelled for identifiers: {identifiers}")
-                return
-            
-            result = task.result()
-            self.event_bus.publish("persona_stitcher.resolution.completed", {
-                "identifiers": identifiers,
-                "result": result
-            })
-            
-        except Exception as e:
-            logger.error(f"Error in resolution completion: {str(e)}", exc_info=True)
-    
-    def _segmentation_completed(self, segment_definition: str, task: asyncio.Task):
-        """Callback for when segmentation task completes"""
-        try:
-            if task.cancelled():
-                logger.info(f"Segmentation task cancelled for: {segment_definition}")
-                return
-            
-            result = task.result()
-            self.event_bus.publish("persona_stitcher.segmentation.completed", {
-                "segment_definition": segment_definition,
-                "result": result
-            })
-            
-        except Exception as e:
-            logger.error(f"Error in segmentation completion: {str(e)}", exc_info=True)
-    
-    async def _enrich_lead(self, lead_uuid: str, lead_data: Dict[str, Any]) -> Optional[PersonaProfile]:
-        """Main lead enrichment method"""
-        async with self.semaphore:
+    def _enrich_social_profiles(self, leads: List[Dict]) -> List[Dict]:
+        """Enrich leads with social profile data"""
+        enriched_leads = []
+        
+        for lead in leads:
             try:
-                logger.info(f"Enriching lead: {lead_uuid}")
+                # Find social profiles
+                social_profiles = self._find_social_profiles(lead)
                 
-                # Check cache first
-                if lead_uuid in self.enrichment_cache:
-                    return self.enrichment_cache[lead_uuid]
+                # Add to lead data
+                lead['social_profiles'] = social_profiles
                 
-                # Create persona profile
-                profile = PersonaProfile(
-                    uuid=str(uuid.uuid4()),
-                    base_lead_uuid=lead_uuid
-                )
+                # Calculate social completeness score
+                lead['social_completeness'] = self._calculate_social_completeness(social_profiles)
                 
-                # Resolve identities
-                identifiers = self._extract_identifiers(lead_data)
-                if identifiers:
-                    resolved_identities = await self._resolve_identities(identifiers)
-                    profile.resolved_identities = resolved_identities
-                    self.session_stats["identities_resolved"] += len(resolved_identities)
-                
-                # Enrich with AI insights
-                await self._enrich_with_ai_insights(profile, lead_data)
-                
-                # Create DNA tags
-                await self._create_dna_tags(profile, lead_data)
-                
-                # Apply custom segments
-                await self._apply_custom_segments(profile)
-                
-                # Calculate confidence score
-                profile.confidence_score = self._calculate_confidence_score(profile)
-                
-                # Cache result
-                self.enrichment_cache[lead_uuid] = profile
-                
-                # Update stats
-                self.session_stats["leads_enriched"] += 1
-                self.session_stats["successful"] += 1
-                
-                # Save to storage
-                await self._save_persona_profile(profile)
-                
-                return profile
+                enriched_leads.append(lead)
                 
             except Exception as e:
+                logger.warning(f"Error enriching social profiles for lead {lead.get('id', 'unknown')}: {str(e)}")
+                enriched_leads.append(lead)  # Keep original lead
+        
+        return enriched_leads
+    
+    def _enrich_company_data(self, leads: List[Dict]) -> List[Dict]:
+        """Enrich leads with company information"""
+        enriched_leads = []
+        
+        for lead in leads:
+            try:
+                domain = lead.get('domain')
+                if not domain:
+                    enriched_leads.append(lead)
+                    continue
+                
+                # Get company data
+                company_data = self._get_company_data(domain)
+                
+                # Add to lead data
+                lead['company'] = company_data
+                
+                # Calculate company fit score
+                lead['company_fit_score'] = self._calculate_company_fit(company_data)
+                
+                enriched_leads.append(lead)
+                
+            except Exception as e:
+                logger.warning(f"Error enriching company data for lead {lead.get('id', 'unknown')}: {str(e)}")
+                enriched_leads.append(lead)
+        
+        return enriched_leads
+    
+    def _enrich_funding_data(self, leads: List[Dict]) -> List[Dict]:
+        """Enrich leads with funding information"""
+        enriched_leads = []
+        
+        for lead in leads:
+            try:
+                domain = lead.get('domain')
+                if not domain:
+                    enriched_leads.append(lead)
+                    continue
+                
+                # Get funding data
+                funding_data = self._get_funding_data(domain)
+                
+                # Add to lead data
+                lead['funding'] = funding_data
+                
+                # Calculate funding attractiveness score
+                lead['funding_attractiveness'] = self._calculate_funding_attractiveness(funding_data)
+                
+                enriched_leads.append(lead)
+                
+            except Exception as e:
+                logger.warning(f"Error enriching funding data for lead {lead.get('id', 'unknown')}: {str(e)}")
+                enriched_leads.append(lead)
+        
+        return enriched_leads
+    
+    def _enrich_technologies(self, leads: List[Dict]) -> List[Dict]:
+        """Enrich leads with technology stack information"""
+        enriched_leads = []
+        
+        for lead in leads:
+            try:
+                domain = lead.get('domain')
+                if not domain:
+                    enriched_leads.append(lead)
+                    continue
+                
+                # Get technology data
+                tech_data = self._get_technology_data(domain)
+                
+                # Add to lead data
+                lead['technologies'] = tech_data
+                
+                # Calculate tech compatibility score
+                lead['tech_compatibility'] = self._calculate_tech_compatibility(tech_data)
+                
+                enriched_leads.append(lead)
+                
+            except Exception as e:
+                logger.warning(f"Error enriching technology data for lead {lead.get('id', 'unknown')}: {str(e)}")
+                enriched_leads.append(lead)
+        
+        return enriched_leads
+    
+    def _enrich_contacts(self, leads: List[Dict]) -> List[Dict]:
+        """Enrich leads with additional contact information"""
+        enriched_leads = []
+        
+        for lead in leads:
+            try:
+                # Get additional contacts
+                contacts = self._find_additional_contacts(lead)
+                
+                # Add to lead data
+                lead['additional_contacts'] = contacts
+                
+                # Calculate contact completeness score
+                lead['contact_completeness'] = self._calculate_contact_completeness(contacts)
+                
+                enriched_leads.append(lead)
+                
+            except Exception as e:
+                logger.warning(f"Error enriching contacts for lead {lead.get('id', 'unknown')}: {str(e)}")
+                enriched_leads.append(lead)
+        
+        return enriched_leads
+    
+    def _find_social_profiles(self, lead: Dict) -> Dict:
+        """Find social profiles for a lead"""
+        social_profiles = {}
+        
+        # Implementation for finding social profiles
+        # This would typically involve:
+        # 1. Searching for profiles by name and company
+        # 2. Verifying profile authenticity
+        # 3. Extracting profile data
+        
+        # Placeholder implementation
+        social_profiles = {
+            'linkedin': None,
+            'twitter': None,
+            'github': None,
+            'facebook': None
+        }
+        
+        return social_profiles
+    
+    def _get_company_data(self, domain: str) -> Dict:
+        """Get company information for a domain"""
+        # Implementation for getting company data
+        # This would typically involve:
+        # 1. Looking up company information
+        # 2. Extracting company details
+        # 3. Verifying data accuracy
+        
+        # Placeholder implementation
+        return {
+            'name': '',
+            'industry': '',
+            'size': '',
+            'revenue': '',
+            'description': '',
+            'founded': '',
+            'location': '',
+            'website': domain
+        }
+    
+    def _get_funding_data(self, domain: str) -> Dict:
+        """Get funding information for a company"""
+        # Implementation for getting funding data
+        # This would typically involve:
+        # 1. Searching funding databases
+        # 2. Extracting funding rounds
+        # 3. Calculating total funding
+        
+        # Placeholder implementation
+        return {
+            'total_funding': 0,
+            'last_round': '',
+            'last_round_date': '',
+            'investors': [],
+            'funding_rounds': []
+        }
+    
+    def _get_technology_data(self, domain: str) -> Dict:
+        """Get technology stack information for a domain"""
+        # Implementation for getting technology data
+        # This would typically involve:
+        # 1. Analyzing website technologies
+        # 2. Identifying tech stack components
+        # 3. Categorizing technologies
+        
+        # Placeholder implementation
+        return {
+            'frontend': [],
+            'backend': [],
+            'analytics': [],
+            'hosting': [],
+            'cms': [],
+            'ecommerce': [],
+            'advertising': []
+        }
+    
+    def _find_additional_contacts(self, lead: Dict) -> List[Dict]:
+        """Find additional contacts for a company"""
+        # Implementation for finding additional contacts
+        # This would typically involve:
+        # 1. Searching company website
+        # 2. Extracting contact information
+        # 3. Verifying contact details
+        
+        # Placeholder implementation
+        return []
+    
+    def _merge_leads(self, lead1: Dict, lead2: Dict) -> Dict:
+        """Merge two lead records"""
+        merged = lead1.copy()
+        
+        # Merge fields intelligently
+        for key, value in lead2.items():
+            if key not in merged or not merged[key]:
+                merged[key] = value
+            elif key == 'social_profiles':
+                # Merge social profiles
+                merged[key] = self._merge_social_profiles(merged[key], value)
+            elif key == 'technologies':
+                # Merge technology lists
+                merged[key] = self._merge_technology_lists(merged[key], value)
+        
+        return merged
+    
+    def _merge_social_profiles(self, profiles1: Dict, profiles2: Dict) -> Dict:
+        """Merge social profile dictionaries"""
+        merged = profiles1.copy()
+        
+        for platform, url in profiles2.items():
+            if not merged.get(platform):
+                merged[platform] = url
+        
+        return merged
+    
+    def _merge_technology_lists(self, tech1: Dict, tech2: Dict) -> Dict:
+        """Merge technology category dictionaries"""
+        merged = tech1.copy()
+        
+        for category, technologies in tech2.items():
+            if category not in merged:
+                merged[category] = technologies
+            else:
+                # Merge technology lists, removing duplicates
+                merged[category] = list(set(merged[category] + technologies))
+        
+        return merged
+    
+    def _resolve_social_profiles(self, lead: Dict) -> Dict:
+        """Resolve social profiles across platforms"""
+        # Implementation for social profile resolution
+        # This would typically involve:
+        # 1. Cross-referencing profiles
+        # 2. Verifying profile ownership
+        # 3. Consolidating profile data
+        
+        return lead
+    
+    def _add_ai_insights(self, lead: Dict) -> Dict:
+        """Add AI-inferred insights to lead"""
+        try:
+            # Calculate lead score
+            lead_score = self.lead_scorer.score_lead(lead)
+            lead['ai_score'] = lead_score
+            
+            # Add persona insights
+            persona_insights = self.nlp_processor.analyze_persona(lead)
+            lead['persona_insights'] = persona_insights
+            
+            # Add predicted attributes
+            predicted_attrs = self.nlp_processor.predict_attributes(lead)
+            lead.update(predicted_attrs)
+            
+            return lead
+            
+        except Exception as e:
+            logger.error(f"Error adding AI insights: {str(e)}", exc_info=True)
+            return lead
+    
+    def _calculate_social_completeness(self, social_profiles: Dict) -> float:
+        """Calculate social profile completeness score"""
+        total_platforms = len(social_profiles)
+        if total_platforms == 0:
+            return 0.0
+        
+        completed_platforms = sum(1 for url in social_profiles.values() if url)
+        return completed_platforms / total_platforms
+    
+    def _calculate_company_fit(self, company_data: Dict) -> float:
+        """Calculate company fit score"""
+        # Implementation for company fit calculation
+        # This would typically involve:
+        # 1. Evaluating company size
+        # 2. Assessing industry relevance
+        # 3. Considering funding stage
+        
+        return 0.5  # Placeholder
+    
+    def _calculate_funding_attractiveness(self, funding_data: Dict) -> float:
+        """Calculate funding attractiveness score"""
+        # Implementation for funding attractiveness calculation
+        # This would typically involve:
+        # 1. Evaluating total funding
+        # 2. Considering funding stage
+        # 3. Assessing investor quality
+        
+        return 0.5  # Placeholder
+    
+    def _calculate_tech_compatibility(self, tech_data: Dict) -> float:
+        """Calculate technology compatibility score"""
+        # Implementation for tech compatibility calculation
+        # This would typically involve:
+        # 1. Matching tech stack
+        # 2. Evaluating tech preferences
+        # 3. Considering integration potential
+        
+        return 0.5  # Placeholder
+    
+    def _calculate_contact_completeness(self, contacts: List[Dict]) -> float:
+        """Calculate contact completeness score"""
+        if not contacts:
+            return 0.0
+        
+        # Calculate based on contact information completeness
+        total_completeness = 0
+        for contact in contacts:
+            completeness = 0
+            if contact.get('name'):
+                completeness += 0.25
+            if contact.get('email'):
+                completeness += 0.25
+            if contact.get('phone'):
+                completeness += 0.25
+            if contact.get('title'):
+                completeness += 0.25
+            total_completeness += completeness
+        
+        return total_completeness / len(contacts)

@@ -14,7 +14,7 @@ from functools import wraps
 import aiohttp
 from playwright.async_api import Page, Error as PlaywrightError
 
-from engine.storage import Storage
+from engine.SecureStorage import SecureStorage
 from modules.web_crawlers.self_healing import DOMSelfHealingEngine
 
 
@@ -73,8 +73,8 @@ class RetryResult:
 
 
 class RetryManager:
-    def __init__(self, storage: Storage, self_healing_engine: DOMSelfHealingEngine = None):
-        self.storage = storage
+    def __init__(self, SecureStorage: SecureStorage, self_healing_engine: DOMSelfHealingEngine = None):
+        self.SecureStorage = SecureStorage
         self.self_healing_engine = self_healing_engine
         self.logger = logging.getLogger("retry_manager")
         self.logger.setLevel(logging.INFO)
@@ -102,7 +102,7 @@ class RetryManager:
 
     def _initialize_tables(self):
         """Initialize database tables if they don't exist"""
-        self.storage.execute("""
+        self.SecureStorage.execute("""
         CREATE TABLE IF NOT EXISTS retry_attempts (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             url TEXT,
@@ -118,7 +118,7 @@ class RetryManager:
         )
         """)
 
-        self.storage.execute("""
+        self.SecureStorage.execute("""
         CREATE TABLE IF NOT EXISTS proxy_pool (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             proxy_url TEXT UNIQUE,
@@ -129,7 +129,7 @@ class RetryManager:
         )
         """)
 
-        self.storage.execute("""
+        self.SecureStorage.execute("""
         CREATE TABLE IF NOT EXISTS user_agent_pool (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             user_agent TEXT UNIQUE,
@@ -143,21 +143,21 @@ class RetryManager:
     def _load_proxy_pool(self) -> List[str]:
         """Load proxy pool from database"""
         proxies = []
-        for row in self.storage.query("SELECT proxy_url FROM proxy_pool WHERE active = 1"):
+        for row in self.SecureStorage.query("SELECT proxy_url FROM proxy_pool WHERE active = 1"):
             proxies.append(row['proxy_url'])
         return proxies
 
     def _load_user_agent_pool(self) -> List[str]:
         """Load user agent pool from database"""
         user_agents = []
-        for row in self.storage.query("SELECT user_agent FROM user_agent_pool WHERE active = 1"):
+        for row in self.SecureStorage.query("SELECT user_agent FROM user_agent_pool WHERE active = 1"):
             user_agents.append(row['user_agent'])
         return user_agents
 
     def add_proxy(self, proxy_url: str):
         """Add a new proxy to the pool"""
         try:
-            self.storage.execute(
+            self.SecureStorage.execute(
                 "INSERT OR IGNORE INTO proxy_pool (proxy_url) VALUES (?)",
                 (proxy_url,)
             )
@@ -170,7 +170,7 @@ class RetryManager:
     def add_user_agent(self, user_agent: str):
         """Add a new user agent to the pool"""
         try:
-            self.storage.execute(
+            self.SecureStorage.execute(
                 "INSERT OR IGNORE INTO user_agent_pool (user_agent) VALUES (?)",
                 (user_agent,)
             )
@@ -188,7 +188,7 @@ class RetryManager:
         # Get proxy stats
         proxy_stats = {}
         for proxy in self.proxy_pool:
-            row = self.storage.query(
+            row = self.SecureStorage.query(
                 "SELECT success_count, failure_count FROM proxy_pool WHERE proxy_url = ?",
                 (proxy,)
             ).fetchone()
@@ -224,7 +224,7 @@ class RetryManager:
         selected_proxy = random.choices(top_proxies, weights=normalized_weights)[0]
         
         # Update last used time
-        self.storage.execute(
+        self.SecureStorage.execute(
             "UPDATE proxy_pool SET last_used = ? WHERE proxy_url = ?",
             (datetime.now().isoformat(), selected_proxy)
         )
@@ -239,7 +239,7 @@ class RetryManager:
         # Get user agent stats
         ua_stats = {}
         for ua in self.user_agent_pool:
-            row = self.storage.query(
+            row = self.SecureStorage.query(
                 "SELECT success_count, failure_count FROM user_agent_pool WHERE user_agent = ?",
                 (ua,)
             ).fetchone()
@@ -275,7 +275,7 @@ class RetryManager:
         selected_ua = random.choices(top_uas, weights=normalized_weights)[0]
         
         # Update last used time
-        self.storage.execute(
+        self.SecureStorage.execute(
             "UPDATE user_agent_pool SET last_used = ? WHERE user_agent = ?",
             (datetime.now().isoformat(), selected_ua)
         )
@@ -285,18 +285,18 @@ class RetryManager:
     def record_proxy_result(self, proxy_url: str, success: bool):
         """Record the result of using a proxy"""
         if success:
-            self.storage.execute(
+            self.SecureStorage.execute(
                 "UPDATE proxy_pool SET success_count = success_count + 1 WHERE proxy_url = ?",
                 (proxy_url,)
             )
         else:
-            self.storage.execute(
+            self.SecureStorage.execute(
                 "UPDATE proxy_pool SET failure_count = failure_count + 1 WHERE proxy_url = ?",
                 (proxy_url,)
             )
             
             # Deactivate proxy if failure rate is too high
-            row = self.storage.query(
+            row = self.SecureStorage.query(
                 "SELECT success_count, failure_count FROM proxy_pool WHERE proxy_url = ?",
                 (proxy_url,)
             ).fetchone()
@@ -306,7 +306,7 @@ class RetryManager:
                 failure = row['failure_count']
                 total = success + failure
                 if total >= 5 and failure / total > 0.7:
-                    self.storage.execute(
+                    self.SecureStorage.execute(
                         "UPDATE proxy_pool SET active = 0 WHERE proxy_url = ?",
                         (proxy_url,)
                     )
@@ -317,18 +317,18 @@ class RetryManager:
     def record_user_agent_result(self, user_agent: str, success: bool):
         """Record the result of using a user agent"""
         if success:
-            self.storage.execute(
+            self.SecureStorage.execute(
                 "UPDATE user_agent_pool SET success_count = success_count + 1 WHERE user_agent = ?",
                 (user_agent,)
             )
         else:
-            self.storage.execute(
+            self.SecureStorage.execute(
                 "UPDATE user_agent_pool SET failure_count = failure_count + 1 WHERE user_agent = ?",
                 (user_agent,)
             )
             
             # Deactivate user agent if failure rate is too high
-            row = self.storage.query(
+            row = self.SecureStorage.query(
                 "SELECT success_count, failure_count FROM user_agent_pool WHERE user_agent = ?",
                 (user_agent,)
             ).fetchone()
@@ -338,7 +338,7 @@ class RetryManager:
                 failure = row['failure_count']
                 total = success + failure
                 if total >= 5 and failure / total > 0.7:
-                    self.storage.execute(
+                    self.SecureStorage.execute(
                         "UPDATE user_agent_pool SET active = 0 WHERE user_agent = ?",
                         (user_agent,)
                     )
@@ -358,7 +358,7 @@ class RetryManager:
             delay = config.base_delay * self._fibonacci(attempt)
         elif config.strategy == RetryStrategy.ADAPTIVE:
             # Adaptive strategy adjusts based on recent success rate
-            recent_attempts = self.storage.query(
+            recent_attempts = self.SecureStorage.query(
                 "SELECT success FROM retry_attempts ORDER BY timestamp DESC LIMIT 10"
             ).fetchall()
             
@@ -424,7 +424,7 @@ class RetryManager:
                       user_agent_used: str = None, healing_attempted: bool = False,
                       strategy_used: str = ""):
         """Record a retry attempt in the database"""
-        self.storage.execute(
+        self.SecureStorage.execute(
             """
             INSERT INTO retry_attempts 
             (url, error_type, error_message, attempt_number, timestamp, success, 
@@ -705,7 +705,7 @@ class RetryManager:
         since = datetime.now() - timedelta(days=days)
         
         # Get retry attempts from database
-        attempts = self.storage.query(
+        attempts = self.SecureStorage.query(
             "SELECT * FROM retry_attempts WHERE timestamp >= ?",
             (since.isoformat(),)
         ).fetchall()

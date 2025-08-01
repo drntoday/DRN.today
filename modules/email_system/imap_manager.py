@@ -21,7 +21,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 
-from engine.storage import Storage
+from engine.SecureStorage import SecureStorage
 from ai.nlp import NLPProcessor
 from ai.scoring import LeadScorer
 from modules.email_system.bounce_detector import BounceDetector
@@ -71,9 +71,9 @@ class IMAPAccount:
 
 
 class IMAPManager:
-    def __init__(self, storage: Storage, nlp_processor: NLPProcessor, 
+    def __init__(self, SecureStorage: SecureStorage, nlp_processor: NLPProcessor, 
                  scorer: LeadScorer, bounce_detector: BounceDetector):
-        self.storage = storage
+        self.SecureStorage = SecureStorage
         self.nlp = nlp_processor
         self.scorer = scorer
         self.bounce_detector = bounce_detector
@@ -98,7 +98,7 @@ class IMAPManager:
 
     def _initialize_tables(self):
         """Initialize database tables if they don't exist"""
-        self.storage.execute("""
+        self.SecureStorage.execute("""
         CREATE TABLE IF NOT EXISTS imap_accounts (
             id TEXT PRIMARY KEY,
             email TEXT NOT NULL,
@@ -113,7 +113,7 @@ class IMAPManager:
         )
         """)
 
-        self.storage.execute("""
+        self.SecureStorage.execute("""
         CREATE TABLE IF NOT EXISTS email_replies (
             id TEXT PRIMARY KEY,
             message_id TEXT NOT NULL,
@@ -135,7 +135,7 @@ class IMAPManager:
         )
         """)
 
-        self.storage.execute("""
+        self.SecureStorage.execute("""
         CREATE TABLE IF NOT EXISTS bounce_events (
             id TEXT PRIMARY KEY,
             email_reply_id TEXT,
@@ -148,8 +148,8 @@ class IMAPManager:
         """)
 
     def _load_imap_accounts(self):
-        """Load IMAP accounts from storage"""
-        for row in self.storage.query("SELECT * FROM imap_accounts WHERE active = 1"):
+        """Load IMAP accounts from SecureStorage"""
+        for row in self.SecureStorage.query("SELECT * FROM imap_accounts WHERE active = 1"):
             account = IMAPAccount(
                 id=row['id'],
                 email=row['email'],
@@ -192,7 +192,7 @@ class IMAPManager:
             folder=folder
         )
         
-        self.storage.execute(
+        self.SecureStorage.execute(
             """
             INSERT INTO imap_accounts 
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -211,7 +211,7 @@ class IMAPManager:
         """Remove an IMAP account"""
         if account_id in self.imap_accounts:
             del self.imap_accounts[account_id]
-            self.storage.execute(
+            self.SecureStorage.execute(
                 "UPDATE imap_accounts SET active = 0 WHERE id = ?",
                 (account_id,)
             )
@@ -282,7 +282,7 @@ class IMAPManager:
             
             # Update last checked time
             account.last_checked = datetime.now()
-            self.storage.execute(
+            self.SecureStorage.execute(
                 "UPDATE imap_accounts SET last_checked = ? WHERE id = ?",
                 (account.last_checked.isoformat(), account.id)
             )
@@ -407,7 +407,7 @@ class IMAPManager:
                     bounce_type, bounce_reason = self.bounce_detector.detect_bounce(reply)
                     
                     # Record bounce event
-                    self.storage.execute(
+                    self.SecureStorage.execute(
                         """
                         INSERT INTO bounce_events 
                         VALUES (?, ?, ?, ?, ?)
@@ -536,7 +536,7 @@ class IMAPManager:
 
     def _save_reply(self, reply: EmailReply):
         """Save an email reply to the database"""
-        self.storage.execute(
+        self.SecureStorage.execute(
             """
             INSERT OR REPLACE INTO email_replies 
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -563,7 +563,7 @@ class IMAPManager:
     def _handle_bounce(self, lead_id: str, bounce_type: BounceType):
         """Handle a bounced email by updating the lead"""
         # Mark lead as bounced
-        self.storage.execute(
+        self.SecureStorage.execute(
             "UPDATE leads SET status = 'bounced', bounced_at = ? WHERE id = ?",
             (datetime.now().isoformat(), lead_id)
         )
@@ -605,7 +605,7 @@ class IMAPManager:
         """Get all replies for a specific campaign"""
         replies = []
         
-        for row in self.storage.query(
+        for row in self.SecureStorage.query(
             "SELECT * FROM email_replies WHERE campaign_id = ? ORDER BY received_at DESC",
             (campaign_id,)
         ):
@@ -638,7 +638,7 @@ class IMAPManager:
         reply_counts = {reply_type.value: 0 for reply_type in ReplyType}
         total_replies = 0
         
-        for row in self.storage.query(
+        for row in self.SecureStorage.query(
             "SELECT reply_type, COUNT(*) as count FROM email_replies WHERE received_at >= ? GROUP BY reply_type",
             (since.isoformat(),)
         ):
@@ -647,7 +647,7 @@ class IMAPManager:
         
         # Get bounce counts
         bounce_counts = {}
-        for row in self.storage.query(
+        for row in self.SecureStorage.query(
             "SELECT bounce_type, COUNT(*) as count FROM bounce_events WHERE timestamp >= ? GROUP BY bounce_type",
             (since.isoformat(),)
         ):
@@ -655,7 +655,7 @@ class IMAPManager:
         
         # Calculate reply rate
         # In a real implementation, we would get the total emails sent
-        total_sent = self.storage.query(
+        total_sent = self.SecureStorage.query(
             "SELECT COUNT(*) FROM email_events WHERE event_type = 'sent' AND timestamp >= ?",
             (since.isoformat(),)
         ).fetchone()[0]
@@ -682,7 +682,7 @@ class IMAPManager:
         query += " ORDER BY received_at DESC"
         
         replies = []
-        for row in self.storage.query(query, params):
+        for row in self.SecureStorage.query(query, params):
             replies.append({
                 "id": row['id'],
                 "message_id": row['message_id'],

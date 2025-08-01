@@ -10,7 +10,7 @@ from enum import Enum
 import numpy as np
 from sklearn.preprocessing import MinMaxScaler
 
-from engine.storage import Storage
+from engine.SecureStorage import SecureStorage
 from ai.nlp import NLPProcessor
 from ai.scoring import LeadScorer
 
@@ -61,8 +61,8 @@ class LeadInsights:
 
 
 class LeadInsightsEngine:
-    def __init__(self, storage: Storage, nlp_processor: NLPProcessor, scorer: LeadScorer):
-        self.storage = storage
+    def __init__(self, SecureStorage: SecureStorage, nlp_processor: NLPProcessor, scorer: LeadScorer):
+        self.SecureStorage = SecureStorage
         self.nlp = nlp_processor
         self.scorer = scorer
         self._initialize_tables()
@@ -123,7 +123,7 @@ class LeadInsightsEngine:
 
     def _initialize_tables(self):
         """Initialize database tables if they don't exist"""
-        self.storage.execute("""
+        self.SecureStorage.execute("""
         CREATE TABLE IF NOT EXISTS lead_insights (
             lead_id TEXT PRIMARY KEY,
             job_seniority TEXT,
@@ -137,7 +137,7 @@ class LeadInsightsEngine:
         """)
 
     def _load_reference_data(self):
-        """Load any reference data from storage"""
+        """Load any reference data from SecureStorage"""
         # In a real implementation, we might load industry benchmarks, etc.
         pass
 
@@ -176,7 +176,7 @@ class LeadInsightsEngine:
             }
         )
         
-        # Save to storage
+        # Save to SecureStorage
         self._save_insights(insights)
         
         return insights
@@ -363,8 +363,8 @@ class LeadInsightsEngine:
         return authority
 
     def _save_insights(self, insights: LeadInsights):
-        """Save insights to storage"""
-        self.storage.execute(
+        """Save insights to SecureStorage"""
+        self.SecureStorage.execute(
             """
             INSERT OR REPLACE INTO lead_insights 
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
@@ -383,7 +383,7 @@ class LeadInsightsEngine:
 
     def get_insights(self, lead_id: str) -> Optional[LeadInsights]:
         """Retrieve insights for a lead"""
-        row = self.storage.query(
+        row = self.SecureStorage.query(
             "SELECT * FROM lead_insights WHERE lead_id = ?",
             (lead_id,)
         ).fetchone()
@@ -411,7 +411,7 @@ class LeadInsightsEngine:
         """Generate insights for multiple leads efficiently"""
         results = {}
         for lead_id in lead_ids:
-            # In a real implementation, we'd fetch lead data from storage
+            # In a real implementation, we'd fetch lead data from SecureStorage
             lead_data = {"id": lead_id}  # Simplified for example
             insights = self.generate_insights(lead_id, lead_data)
             results[lead_id] = insights

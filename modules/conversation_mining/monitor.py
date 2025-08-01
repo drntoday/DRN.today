@@ -16,7 +16,7 @@ import requests
 from bs4 import BeautifulSoup
 from playwright.async_api import async_playwright
 
-from engine.storage import Storage
+from engine.SecureStorage import SecureStorage
 from ai.nlp import NLPProcessor
 from modules.conversation_mining.intent_detector import IntentDetector
 from modules.conversation_mining.classifier import ConversationClassifier
@@ -48,9 +48,9 @@ class Conversation:
 
 
 class ConversationMonitor:
-    def __init__(self, storage: Storage, nlp_processor: NLPProcessor, 
+    def __init__(self, SecureStorage: SecureStorage, nlp_processor: NLPProcessor, 
                  intent_detector: IntentDetector, classifier: ConversationClassifier):
-        self.storage = storage
+        self.SecureStorage = SecureStorage
         self.nlp = nlp_processor
         self.intent_detector = intent_detector
         self.classifier = classifier
@@ -116,7 +116,7 @@ class ConversationMonitor:
 
     def _initialize_tables(self):
         """Initialize database tables if they don't exist"""
-        self.storage.execute("""
+        self.SecureStorage.execute("""
         CREATE TABLE IF NOT EXISTS monitored_conversations (
             id TEXT PRIMARY KEY,
             platform TEXT NOT NULL,
@@ -135,7 +135,7 @@ class ConversationMonitor:
         )
         """)
 
-        self.storage.execute("""
+        self.SecureStorage.execute("""
         CREATE TABLE IF NOT EXISTS monitoring_config (
             platform TEXT PRIMARY KEY,
             config TEXT,
@@ -145,8 +145,8 @@ class ConversationMonitor:
         """)
 
     def _load_configuration(self):
-        """Load monitoring configuration from storage"""
-        for row in self.storage.query("SELECT * FROM monitoring_config"):
+        """Load monitoring configuration from SecureStorage"""
+        for row in self.SecureStorage.query("SELECT * FROM monitoring_config"):
             platform = Platform(row['platform'])
             config = json.loads(row['config'])
             active = bool(row['active'])
@@ -156,9 +156,9 @@ class ConversationMonitor:
                 self.platform_configs[platform].update(config)
 
     def save_configuration(self):
-        """Save current monitoring configuration to storage"""
+        """Save current monitoring configuration to SecureStorage"""
         for platform in Platform:
-            self.storage.execute(
+            self.SecureStorage.execute(
                 "INSERT OR REPLACE INTO monitoring_config VALUES (?, ?, ?, ?)",
                 (
                     platform.value,
@@ -559,7 +559,7 @@ class ConversationMonitor:
             # Mark as processed
             conversation.processed = True
             
-            # Save to storage
+            # Save to SecureStorage
             self._save_conversation(conversation)
             
             # Log high-intent conversations
@@ -575,8 +575,8 @@ class ConversationMonitor:
             self._save_conversation(conversation)
 
     def _save_conversation(self, conversation: Conversation):
-        """Save conversation to storage"""
-        self.storage.execute(
+        """Save conversation to SecureStorage"""
+        self.SecureStorage.execute(
             """
             INSERT OR REPLACE INTO monitored_conversations 
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -622,7 +622,7 @@ class ConversationMonitor:
         query += " ORDER BY timestamp DESC LIMIT 100"
         
         conversations = []
-        for row in self.storage.query(query, params):
+        for row in self.SecureStorage.query(query, params):
             conversation = Conversation(
                 id=row['id'],
                 platform=Platform(row['platform']),
@@ -675,7 +675,7 @@ class ConversationMonitor:
         query += " GROUP BY platform"
         
         stats = {}
-        for row in self.storage.query(query, params):
+        for row in self.SecureStorage.query(query, params):
             stats[row['platform']] = {
                 "total_conversations": row['total'],
                 "buying_signals": row['buying_signals'],

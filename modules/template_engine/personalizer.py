@@ -13,7 +13,7 @@ import numpy as np
 from bs4 import BeautifulSoup
 from playwright.async_api import Page, Error as PlaywrightError
 
-from engine.storage import Storage
+from engine.SecureStorage import SecureStorage
 from ai.nlp import NLPProcessor
 from modules.web_crawlers.self_healing import DOMSelfHealingEngine
 
@@ -53,9 +53,9 @@ class PersonalizationToken:
 
 
 class TemplatePersonalizer:
-    def __init__(self, storage: Storage, nlp_processor: NLPProcessor, 
+    def __init__(self, SecureStorage: SecureStorage, nlp_processor: NLPProcessor, 
                  self_healing_engine: DOMSelfHealingEngine = None):
-        self.storage = storage
+        self.SecureStorage = SecureStorage
         self.nlp = nlp_processor
         self.self_healing_engine = self_healing_engine
         self.logger = logging.getLogger("template_personalizer")
@@ -81,7 +81,7 @@ class TemplatePersonalizer:
 
     def _initialize_tables(self):
         """Initialize database tables if they don't exist"""
-        self.storage.execute("""
+        self.SecureStorage.execute("""
         CREATE TABLE IF NOT EXISTS website_data (
             url TEXT PRIMARY KEY,
             title TEXT,
@@ -99,7 +99,7 @@ class TemplatePersonalizer:
         )
         """)
 
-        self.storage.execute("""
+        self.SecureStorage.execute("""
         CREATE TABLE IF NOT EXISTS personalization_tokens (
             id TEXT PRIMARY KEY,
             lead_id TEXT,
@@ -113,7 +113,7 @@ class TemplatePersonalizer:
         )
         """)
 
-        self.storage.execute("""
+        self.SecureStorage.execute("""
         CREATE TABLE IF NOT EXISTS personalization_history (
             id TEXT PRIMARY KEY,
             lead_id TEXT,
@@ -611,7 +611,7 @@ class TemplatePersonalizer:
 
     def _save_website_data(self, website_data: WebsiteData):
         """Save website data to database"""
-        self.storage.execute(
+        self.SecureStorage.execute(
             """
             INSERT OR REPLACE INTO website_data 
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -640,7 +640,7 @@ class TemplatePersonalizer:
             return self.website_cache[url]
         
         # Check database
-        row = self.storage.query(
+        row = self.SecureStorage.query(
             "SELECT * FROM website_data WHERE url = ?",
             (url,)
         ).fetchone()
@@ -764,7 +764,7 @@ class TemplatePersonalizer:
 
     def _save_personalization_token(self, lead_id: str, token: PersonalizationToken):
         """Save a personalization token to database"""
-        self.storage.execute(
+        self.SecureStorage.execute(
             """
             INSERT OR REPLACE INTO personalization_tokens 
             VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -784,7 +784,7 @@ class TemplatePersonalizer:
         """Get personalization tokens for a lead"""
         tokens = []
         
-        for row in self.storage.query(
+        for row in self.SecureStorage.query(
             "SELECT * FROM personalization_tokens WHERE lead_id = ?",
             (lead_id,)
         ):
@@ -930,7 +930,7 @@ class TemplatePersonalizer:
     def _record_personalization(self, lead_id: str, template: str, 
                                level: PersonalizationLevel, tokens: List[PersonalizationToken]):
         """Record personalization history"""
-        self.storage.execute(
+        self.SecureStorage.execute(
             """
             INSERT INTO personalization_history 
             VALUES (?, ?, ?, ?, ?)
@@ -953,7 +953,7 @@ class TemplatePersonalizer:
         level_counts = {level.value: 0 for level in PersonalizationLevel}
         total_personalizations = 0
         
-        for row in self.storage.query(
+        for row in self.SecureStorage.query(
             "SELECT personalization_level, COUNT(*) as count FROM personalization_history WHERE created_at >= ? GROUP BY personalization_level",
             (since.isoformat(),)
         ):
@@ -962,14 +962,14 @@ class TemplatePersonalizer:
         
         # Get token usage statistics
         token_usage = {}
-        for row in self.storage.query(
+        for row in self.SecureStorage.query(
             "SELECT token_name, COUNT(*) as count FROM personalization_tokens WHERE created_at >= ? GROUP BY token_name ORDER BY count DESC LIMIT 10",
             (since.isoformat(),)
         ):
             token_usage[row['token_name']] = row['count']
         
         # Get website data freshness
-        website_count = self.storage.query(
+        website_count = self.SecureStorage.query(
             "SELECT COUNT(*) FROM website_data WHERE last_updated >= ?",
             (since.isoformat(),)
         ).fetchone()[0]

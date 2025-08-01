@@ -17,7 +17,7 @@ from pydantic import BaseModel, Field, validator
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 
-from engine.storage import Storage
+from engine.SecureStorage import SecureStorage
 from engine.license import LicenseManager
 from modules.lead_enrichment.tagging import DNAStyleTaggingSystem
 from modules.lead_enrichment.insights import LeadInsightsEngine
@@ -130,7 +130,7 @@ class APIKeyCreateRequest(BaseModel):
 
 
 class IntegrationAPI:
-    def __init__(self, storage: Storage, license_manager: LicenseManager,
+    def __init__(self, SecureStorage: SecureStorage, license_manager: LicenseManager,
                  tagging_system: DNAStyleTaggingSystem,
                  insights_engine: LeadInsightsEngine,
                  conversation_monitor: ConversationMonitor,
@@ -146,7 +146,7 @@ class IntegrationAPI:
                  ab_testing_engine: ABTestingEngine,
                  nlp_processor: NLPProcessor,
                  lead_scorer: LeadScorer):
-        self.storage = storage
+        self.SecureStorage = SecureStorage
         self.license_manager = license_manager
         self.tagging_system = tagging_system
         self.insights_engine = insights_engine
@@ -221,7 +221,7 @@ class IntegrationAPI:
 
     def _initialize_tables(self):
         """Initialize database tables if they don't exist"""
-        self.storage.execute("""
+        self.SecureStorage.execute("""
         CREATE TABLE IF NOT EXISTS api_keys (
             key TEXT PRIMARY KEY,
             name TEXT NOT NULL,
@@ -233,7 +233,7 @@ class IntegrationAPI:
         )
         """)
 
-        self.storage.execute("""
+        self.SecureStorage.execute("""
         CREATE TABLE IF NOT EXISTS webhooks (
             id TEXT PRIMARY KEY,
             url TEXT NOT NULL,
@@ -245,7 +245,7 @@ class IntegrationAPI:
         )
         """)
 
-        self.storage.execute("""
+        self.SecureStorage.execute("""
         CREATE TABLE IF NOT EXISTS api_logs (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             api_key TEXT,
@@ -260,8 +260,8 @@ class IntegrationAPI:
         """)
 
     def _load_api_keys(self):
-        """Load API keys from storage"""
-        for row in self.storage.query("SELECT * FROM api_keys WHERE is_active = 1"):
+        """Load API keys from SecureStorage"""
+        for row in self.SecureStorage.query("SELECT * FROM api_keys WHERE is_active = 1"):
             api_key = APIKey(
                 key=row['key'],
                 name=row['name'],
@@ -274,8 +274,8 @@ class IntegrationAPI:
             self.api_keys[api_key.key] = api_key
 
     def _load_webhooks(self):
-        """Load webhooks from storage"""
-        for row in self.storage.query("SELECT * FROM webhooks WHERE is_active = 1"):
+        """Load webhooks from SecureStorage"""
+        for row in self.SecureStorage.query("SELECT * FROM webhooks WHERE is_active = 1"):
             webhook = Webhook(
                 id=row['id'],
                 url=row['url'],
@@ -315,7 +315,7 @@ class IntegrationAPI:
             
             # Update last used
             key_data.last_used = datetime.now()
-            self.storage.execute(
+            self.SecureStorage.execute(
                 "UPDATE api_keys SET last_used = ? WHERE key = ?",
                 (key_data.last_used.isoformat(), api_key)
             )
@@ -357,7 +357,7 @@ class IntegrationAPI:
             )
             
             # Save to database
-            self.storage.execute(
+            self.SecureStorage.execute(
                 """
                 INSERT INTO api_keys 
                 VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -421,7 +421,7 @@ class IntegrationAPI:
                 )
             
             # Deactivate in database
-            self.storage.execute(
+            self.SecureStorage.execute(
                 "UPDATE api_keys SET is_active = 0 WHERE key = ?",
                 (key_to_delete.key,)
             )
@@ -442,7 +442,7 @@ class IntegrationAPI:
             # Create lead in database
             lead_id = f"lead_{int(datetime.now().timestamp())}"
             
-            self.storage.execute(
+            self.SecureStorage.execute(
                 """
                 INSERT INTO leads 
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -473,7 +473,7 @@ class IntegrationAPI:
             }
             
             score = self.lead_scorer.calculate_lead_score(lead_data)
-            self.storage.execute(
+            self.SecureStorage.execute(
                 "UPDATE leads SET score = ? WHERE id = ?",
                 (score, lead_id)
             )
@@ -495,7 +495,7 @@ class IntegrationAPI:
             self._check_permission(api_key, "leads:read")
             
             # Get lead from database
-            row = self.storage.query(
+            row = self.SecureStorage.query(
                 "SELECT * FROM leads WHERE id = ?",
                 (lead_id,)
             ).fetchone()
@@ -531,7 +531,7 @@ class IntegrationAPI:
             self._check_permission(api_key, "leads:update")
             
             # Check if lead exists
-            existing = self.storage.query(
+            existing = self.SecureStorage.query(
                 "SELECT id FROM leads WHERE id = ?",
                 (lead_id,)
             ).fetchone()
@@ -566,7 +566,7 @@ class IntegrationAPI:
                 set_clause = ", ".join([f"{k} = ?" for k in updates.keys()])
                 values = list(updates.values()) + [lead_id]
                 
-                self.storage.execute(
+                self.SecureStorage.execute(
                     f"UPDATE leads SET {set_clause} WHERE id = ?",
                     values
                 )
@@ -587,7 +587,7 @@ class IntegrationAPI:
             self._check_permission(api_key, "leads:delete")
             
             # Check if lead exists
-            existing = self.storage.query(
+            existing = self.SecureStorage.query(
                 "SELECT id FROM leads WHERE id = ?",
                 (lead_id,)
             ).fetchone()
@@ -599,7 +599,7 @@ class IntegrationAPI:
                 )
             
             # Delete lead
-            self.storage.execute(
+            self.SecureStorage.execute(
                 "DELETE FROM leads WHERE id = ?",
                 (lead_id,)
             )
@@ -621,7 +621,7 @@ class IntegrationAPI:
             
             # Get leads from database
             leads = []
-            for row in self.storage.query(
+            for row in self.SecureStorage.query(
                 "SELECT * FROM leads ORDER BY created_at DESC LIMIT ? OFFSET ?",
                 (limit, skip)
             ):
@@ -651,7 +651,7 @@ class IntegrationAPI:
             # Create campaign in database
             campaign_id = f"campaign_{int(datetime.now().timestamp())}"
             
-            self.storage.execute(
+            self.SecureStorage.execute(
                 """
                 INSERT INTO campaigns 
                 VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -683,7 +683,7 @@ class IntegrationAPI:
             self._check_permission(api_key, "campaigns:read")
             
             # Get campaign from database
-            row = self.storage.query(
+            row = self.SecureStorage.query(
                 "SELECT * FROM campaigns WHERE id = ?",
                 (campaign_id,)
             ).fetchone()
@@ -716,7 +716,7 @@ class IntegrationAPI:
             
             # Get campaigns from database
             campaigns = []
-            for row in self.storage.query(
+            for row in self.SecureStorage.query(
                 "SELECT * FROM campaigns ORDER BY created_at DESC LIMIT ? OFFSET ?",
                 (limit, skip)
             ):
@@ -741,7 +741,7 @@ class IntegrationAPI:
             self._check_permission(api_key, "emails:send")
             
             # Validate campaign exists
-            campaign = self.storage.query(
+            campaign = self.SecureStorage.query(
                 "SELECT * FROM campaigns WHERE id = ?",
                 (request.campaign_id,)
             ).fetchone()
@@ -755,7 +755,7 @@ class IntegrationAPI:
             # Get leads
             leads = []
             for lead_id in request.lead_ids:
-                lead = self.storage.query(
+                lead = self.SecureStorage.query(
                     "SELECT * FROM leads WHERE id = ?",
                     (lead_id,)
                 ).fetchone()
@@ -776,7 +776,7 @@ class IntegrationAPI:
             
             # Get template
             template_id = request.template_id or campaign['template_id']
-            template = self.storage.query(
+            template = self.SecureStorage.query(
                 "SELECT * FROM templates WHERE id = ?",
                 (template_id,)
             ).fetchone()
@@ -824,7 +824,7 @@ class IntegrationAPI:
             )
             
             # Save to database
-            self.storage.execute(
+            self.SecureStorage.execute(
                 """
                 INSERT INTO webhooks 
                 VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -882,7 +882,7 @@ class IntegrationAPI:
                 )
             
             # Deactivate in database
-            self.storage.execute(
+            self.SecureStorage.execute(
                 "UPDATE webhooks SET is_active = 0 WHERE id = ?",
                 (webhook_id,)
             )
@@ -904,7 +904,7 @@ class IntegrationAPI:
             
             # Get lead counts by source
             source_counts = {}
-            for row in self.storage.query(
+            for row in self.SecureStorage.query(
                 "SELECT source, COUNT(*) as count FROM leads WHERE created_at >= ? GROUP BY source",
                 (since.isoformat(),)
             ):
@@ -912,14 +912,14 @@ class IntegrationAPI:
             
             # Get lead counts by industry
             industry_counts = {}
-            for row in self.storage.query(
+            for row in self.SecureStorage.query(
                 "SELECT industry, COUNT(*) as count FROM leads WHERE created_at >= ? GROUP BY industry",
                 (since.isoformat(),)
             ):
                 industry_counts[row['industry'] or "Unknown"] = row['count']
             
             # Get average lead score
-            avg_score = self.storage.query(
+            avg_score = self.SecureStorage.query(
                 "SELECT AVG(score) as avg FROM leads WHERE created_at >= ?",
                 (since.isoformat(),)
             ).fetchone()[0] or 0
@@ -943,7 +943,7 @@ class IntegrationAPI:
             
             # Get campaign performance
             campaigns = []
-            for row in self.storage.query(
+            for row in self.SecureStorage.query(
                 """
                 SELECT c.id, c.name, 
                        COUNT(e.id) as emails_sent,
@@ -1001,7 +1001,7 @@ class IntegrationAPI:
             
             # Update last used
             key_data.last_used = datetime.now()
-            self.storage.execute(
+            self.SecureStorage.execute(
                 "UPDATE api_keys SET last_used = ? WHERE key = ?",
                 (key_data.last_used.isoformat(), api_key)
             )
@@ -1031,7 +1031,7 @@ class IntegrationAPI:
             response_time = (datetime.now() - start_time).total_seconds()
             
             # Log request
-            self.storage.execute(
+            self.SecureStorage.execute(
                 """
                 INSERT INTO api_logs 
                 (api_key, endpoint, method, status_code, response_time, timestamp, ip_address, user_agent)
@@ -1118,7 +1118,7 @@ class IntegrationAPI:
                         if response.status == 200:
                             # Update last triggered
                             webhook.last_triggered = datetime.now()
-                            self.storage.execute(
+                            self.SecureStorage.execute(
                                 "UPDATE webhooks SET last_triggered = ? WHERE id = ?",
                                 (webhook.last_triggered.isoformat(), webhook.id)
                             )
@@ -1168,7 +1168,7 @@ class IntegrationAPI:
                 )
                 
                 # Log email sent
-                self.storage.execute(
+                self.SecureStorage.execute(
                     """
                     INSERT INTO email_events 
                     (campaign_id, lead_id, event_type, timestamp)
@@ -1180,7 +1180,7 @@ class IntegrationAPI:
                 self.logger.error(f"Error sending email to {lead['email']}: {str(e)}")
                 
                 # Log email failed
-                self.storage.execute(
+                self.SecureStorage.execute(
                     """
                     INSERT INTO email_events 
                     (campaign_id, lead_id, event_type, timestamp, metadata)

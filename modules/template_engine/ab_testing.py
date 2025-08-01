@@ -15,7 +15,7 @@ import pandas as pd
 from scipy import stats
 from sklearn.preprocessing import StandardScaler
 
-from engine.storage import Storage
+from engine.SecureStorage import SecureStorage
 from ai.nlp import NLPProcessor
 
 
@@ -81,8 +81,8 @@ class TestResult:
 
 
 class ABTestingEngine:
-    def __init__(self, storage: Storage, nlp_processor: NLPProcessor):
-        self.storage = storage
+    def __init__(self, SecureStorage: SecureStorage, nlp_processor: NLPProcessor):
+        self.SecureStorage = SecureStorage
         self.nlp = nlp_processor
         self.logger = logging.getLogger("ab_testing_engine")
         self.logger.setLevel(logging.INFO)
@@ -102,7 +102,7 @@ class ABTestingEngine:
 
     def _initialize_tables(self):
         """Initialize database tables if they don't exist"""
-        self.storage.execute("""
+        self.SecureStorage.execute("""
         CREATE TABLE IF NOT EXISTS ab_tests (
             id TEXT PRIMARY KEY,
             name TEXT NOT NULL,
@@ -121,7 +121,7 @@ class ABTestingEngine:
         )
         """)
 
-        self.storage.execute("""
+        self.SecureStorage.execute("""
         CREATE TABLE IF NOT EXISTS test_variants (
             id TEXT PRIMARY KEY,
             test_id TEXT NOT NULL,
@@ -136,7 +136,7 @@ class ABTestingEngine:
         )
         """)
 
-        self.storage.execute("""
+        self.SecureStorage.execute("""
         CREATE TABLE IF NOT EXISTS test_events (
             id TEXT PRIMARY KEY,
             test_id TEXT NOT NULL,
@@ -151,7 +151,7 @@ class ABTestingEngine:
         )
         """)
 
-        self.storage.execute("""
+        self.SecureStorage.execute("""
         CREATE TABLE IF NOT EXISTS test_results (
             id TEXT PRIMARY KEY,
             test_id TEXT NOT NULL,
@@ -170,8 +170,8 @@ class ABTestingEngine:
         """)
 
     def _load_active_tests(self):
-        """Load active tests from storage"""
-        for row in self.storage.query("SELECT * FROM ab_tests WHERE status = ?", (TestStatus.RUNNING.value,)):
+        """Load active tests from SecureStorage"""
+        for row in self.SecureStorage.query("SELECT * FROM ab_tests WHERE status = ?", (TestStatus.RUNNING.value,)):
             test = ABTest(
                 id=row['id'],
                 name=row['name'],
@@ -190,7 +190,7 @@ class ABTestingEngine:
             
             # Load variants
             test.variants = []
-            for v_row in self.storage.query("SELECT * FROM test_variants WHERE test_id = ?", (test.id,)):
+            for v_row in self.SecureStorage.query("SELECT * FROM test_variants WHERE test_id = ?", (test.id,)):
                 variant = TestVariant(
                     id=v_row['id'],
                     test_id=v_row['test_id'],
@@ -227,7 +227,7 @@ class ABTestingEngine:
         )
         
         # Save test to database
-        self.storage.execute(
+        self.SecureStorage.execute(
             """
             INSERT INTO ab_tests 
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -270,7 +270,7 @@ class ABTestingEngine:
         )
         
         # Save variant to database
-        self.storage.execute(
+        self.SecureStorage.execute(
             """
             INSERT INTO test_variants 
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
@@ -312,7 +312,7 @@ class ABTestingEngine:
         test.status = TestStatus.RUNNING
         test.start_date = datetime.now()
         
-        self.storage.execute(
+        self.SecureStorage.execute(
             """
             UPDATE ab_tests 
             SET status = ?, start_date = ? 
@@ -336,7 +336,7 @@ class ABTestingEngine:
         test = self.active_tests[test_id]
         test.status = TestStatus.PAUSED
         
-        self.storage.execute(
+        self.SecureStorage.execute(
             "UPDATE ab_tests SET status = ? WHERE id = ?",
             (test.status.value, test_id)
         )
@@ -357,7 +357,7 @@ class ABTestingEngine:
         test.status = TestStatus.COMPLETED
         test.end_date = datetime.now()
         
-        self.storage.execute(
+        self.SecureStorage.execute(
             """
             UPDATE ab_tests 
             SET status = ?, end_date = ? 
@@ -385,7 +385,7 @@ class ABTestingEngine:
         test.status = TestStatus.CANCELLED
         test.end_date = datetime.now()
         
-        self.storage.execute(
+        self.SecureStorage.execute(
             """
             UPDATE ab_tests 
             SET status = ?, end_date = ? 
@@ -402,7 +402,7 @@ class ABTestingEngine:
 
     def _get_test(self, test_id: str) -> Optional[ABTest]:
         """Get test from database"""
-        row = self.storage.query("SELECT * FROM ab_tests WHERE id = ?", (test_id,)).fetchone()
+        row = self.SecureStorage.query("SELECT * FROM ab_tests WHERE id = ?", (test_id,)).fetchone()
         if not row:
             return None
         
@@ -424,7 +424,7 @@ class ABTestingEngine:
         
         # Load variants
         test.variants = []
-        for v_row in self.storage.query("SELECT * FROM test_variants WHERE test_id = ?", (test_id,)):
+        for v_row in self.SecureStorage.query("SELECT * FROM test_variants WHERE test_id = ?", (test_id,)):
             variant = TestVariant(
                 id=v_row['id'],
                 test_id=v_row['test_id'],
@@ -448,7 +448,7 @@ class ABTestingEngine:
         test = self.active_tests[test_id]
         
         # Check if lead has already been assigned to a variant
-        existing_event = self.storage.query(
+        existing_event = self.SecureStorage.query(
             """
             SELECT variant_id FROM test_events 
             WHERE test_id = ? AND lead_id = ? 
@@ -484,7 +484,7 @@ class ABTestingEngine:
         """Track an event for a test variant"""
         event_id = f"event_{int(datetime.now().timestamp())}"
         
-        self.storage.execute(
+        self.SecureStorage.execute(
             """
             INSERT INTO test_events 
             VALUES (?, ?, ?, ?, ?, ?)
@@ -518,7 +518,7 @@ class ABTestingEngine:
             
             for variant in variants:
                 # Get total sent (leads assigned to this variant)
-                sent = self.storage.query(
+                sent = self.SecureStorage.query(
                     """
                     SELECT COUNT(DISTINCT lead_id) as count 
                     FROM test_events 
@@ -530,7 +530,7 @@ class ABTestingEngine:
                 # Get event count for this metric
                 event_count = 0
                 if metric == TestMetric.OPEN_RATE:
-                    event_count = self.storage.query(
+                    event_count = self.SecureStorage.query(
                         """
                         SELECT COUNT(DISTINCT lead_id) as count 
                         FROM test_events 
@@ -539,7 +539,7 @@ class ABTestingEngine:
                         (test_id, variant.id)
                     ).fetchone()[0]
                 elif metric == TestMetric.CLICK_RATE:
-                    event_count = self.storage.query(
+                    event_count = self.SecureStorage.query(
                         """
                         SELECT COUNT(DISTINCT lead_id) as count 
                         FROM test_events 
@@ -548,7 +548,7 @@ class ABTestingEngine:
                         (test_id, variant.id)
                     ).fetchone()[0]
                 elif metric == TestMetric.REPLY_RATE:
-                    event_count = self.storage.query(
+                    event_count = self.SecureStorage.query(
                         """
                         SELECT COUNT(DISTINCT lead_id) as count 
                         FROM test_events 
@@ -557,7 +557,7 @@ class ABTestingEngine:
                         (test_id, variant.id)
                     ).fetchone()[0]
                 elif metric == TestMetric.CONVERSION_RATE:
-                    event_count = self.storage.query(
+                    event_count = self.SecureStorage.query(
                         """
                         SELECT COUNT(DISTINCT lead_id) as count 
                         FROM test_events 
@@ -566,7 +566,7 @@ class ABTestingEngine:
                         (test_id, variant.id)
                     ).fetchone()[0]
                 elif metric == TestMetric.UNSUBSCRIBE_RATE:
-                    event_count = self.storage.query(
+                    event_count = self.SecureStorage.query(
                         """
                         SELECT COUNT(DISTINCT lead_id) as count 
                         FROM test_events 
@@ -575,7 +575,7 @@ class ABTestingEngine:
                         (test_id, variant.id)
                     ).fetchone()[0]
                 elif metric == TestMetric.SPAM_RATE:
-                    event_count = self.storage.query(
+                    event_count = self.SecureStorage.query(
                         """
                         SELECT COUNT(DISTINCT lead_id) as count 
                         FROM test_events 
@@ -584,7 +584,7 @@ class ABTestingEngine:
                         (test_id, variant.id)
                     ).fetchone()[0]
                 elif metric == TestMetric.DELIVERABILITY_RATE:
-                    event_count = self.storage.query(
+                    event_count = self.SecureStorage.query(
                         """
                         SELECT COUNT(DISTINCT lead_id) as count 
                         FROM test_events 
@@ -638,7 +638,7 @@ class ABTestingEngine:
                     
                     # Save result
                     result_id = f"result_{test_id}_{variant.id}_{metric.value}"
-                    self.storage.execute(
+                    self.SecureStorage.execute(
                         """
                         INSERT OR REPLACE INTO test_results 
                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -674,7 +674,7 @@ class ABTestingEngine:
             metric_results = []
             
             # Get results for each variant
-            for row in self.storage.query(
+            for row in self.SecureStorage.query(
                 """
                 SELECT v.*, r.value, r.sample_size, r.confidence_interval, 
                        r.p_value, r.is_winner, r.improvement
@@ -846,7 +846,7 @@ class ABTestingEngine:
         status_counts = {status.value: 0 for status in TestStatus}
         total_tests = 0
         
-        for row in self.storage.query(
+        for row in self.SecureStorage.query(
             "SELECT status, COUNT(*) as count FROM ab_tests WHERE created_at >= ? GROUP BY status",
             (since.isoformat(),)
         ):
@@ -854,7 +854,7 @@ class ABTestingEngine:
             total_tests += row['count']
         
         # Get average improvement for winning tests
-        avg_improvement = self.storage.query(
+        avg_improvement = self.SecureStorage.query(
             """
             SELECT AVG(improvement) as avg_imp 
             FROM test_results r
@@ -866,7 +866,7 @@ class ABTestingEngine:
         
         # Get most tested metrics
         metric_counts = {}
-        for row in self.storage.query(
+        for row in self.SecureStorage.query(
             """
             SELECT primary_metric, COUNT(*) as count 
             FROM ab_tests 

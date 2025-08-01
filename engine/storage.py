@@ -1,10 +1,3 @@
-#!/usr/bin/env python3
-"""
-DRN.today - Enterprise-Grade Lead Generation Platform
-Secure Storage System
-Production-Ready Implementation
-"""
-
 import os
 import sqlite3
 import threading
