@@ -1,5 +1,72 @@
-# Ignore only virtual environments
+# --- VIRTUAL ENVIRONMENTS ---
 venv/
 .venv/
 env/
 ENV/
+env.bak/
+venv.bak/
+
+# --- PYTHON BYTECODE / CACHE ---
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+
+# --- OS-SPECIFIC FILES ---
+.DS_Store
+Thumbs.db
+
+
+
+
+
+# --- AI MODELS / CHECKPOINTS ---
+ai/models/**/*.bin
+ai/models/**/*.pkl
+ai/models/**/*.ckpt
+
+# --- PACKAGE BUILD FILES ---
+build/
+dist/
+*.egg-info/
+.eggs/
+*.egg
+*.whl
+*.manifest
+*.spec
+pip-wheel-metadata/
+develop-eggs/
+downloads/
+share/python-wheels/
+wheels/
+.installed.cfg
+MANIFEST
+
+# --- PYINSTALLER FILES ---
+*.spec
+
+# --- TEST / COVERAGE TOOLS ---
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+htmlcov/
+.pytest_cache/
+
+# --- IDE / EDITOR FILES ---
+.vscode/
+.idea/
+*.swo
+*.swp
+*~
+
+# --- TEMP FILES ---
+tmp/
+temp/
