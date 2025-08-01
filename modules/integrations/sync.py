@@ -16,7 +16,7 @@ import pandas as pd
 from aiohttp import ClientSession, ClientTimeout
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 
-from engine.SecureStorage import SecureStorage
+from engine.storage import SecureStorage
 from engine.license import LicenseManager
 from ai.nlp import NLPProcessor
 

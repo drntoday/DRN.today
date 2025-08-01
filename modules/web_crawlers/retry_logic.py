@@ -14,7 +14,7 @@ from functools import wraps
 import aiohttp
 from playwright.async_api import Page, Error as PlaywrightError
 
-from engine.SecureStorage import SecureStorage
+from engine.storage import SecureStorage
 from modules.web_crawlers.self_healing import DOMSelfHealingEngine
 
 

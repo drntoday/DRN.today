@@ -18,7 +18,7 @@ from sklearn.metrics import classification_report
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder, StandardScaler
 
-from engine.SecureStorage import SecureStorage
+from engine.storage import SecureStorage
 from ai.nlp import NLPProcessor
 from ai.scoring import LeadScorer
 

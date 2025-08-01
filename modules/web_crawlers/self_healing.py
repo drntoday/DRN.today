@@ -13,7 +13,7 @@ from pathlib import Path
 import numpy as np
 from playwright.async_api import Page, ElementHandle, TimeoutError as PlaywrightTimeoutError
 
-from engine.SecureStorage import SecureStorage
+from engine.storage import SecureStorage
 from ai.nlp import NLPProcessor
 
 

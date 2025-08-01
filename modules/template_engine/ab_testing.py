@@ -15,7 +15,7 @@ import pandas as pd
 from scipy import stats
 from sklearn.preprocessing import StandardScaler
 
-from engine.SecureStorage import SecureStorage
+from engine.storage import SecureStorage
 from ai.nlp import NLPProcessor
 
 

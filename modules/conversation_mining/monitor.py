@@ -16,7 +16,7 @@ import requests
 from bs4 import BeautifulSoup
 from playwright.async_api import async_playwright
 
-from engine.SecureStorage import SecureStorage
+from engine.storage import SecureStorage
 from ai.nlp import NLPProcessor
 from modules.conversation_mining.intent_detector import IntentDetector
 from modules.conversation_mining.classifier import ConversationClassifier

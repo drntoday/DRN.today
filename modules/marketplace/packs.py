@@ -17,7 +17,7 @@ import pandas as pd
 from fastapi import UploadFile
 from sqlalchemy import desc
 
-from engine.SecureStorage import SecureStorage
+from engine.storage import SecureStorage
 from engine.license import LicenseManager
 from ai.nlp import NLPProcessor
 

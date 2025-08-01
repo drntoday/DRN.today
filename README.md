@@ -177,6 +177,9 @@ DRN.today/
 │   ├── 💬 conversation_mining/   # Conversation mining features
 │   │   ├── monitor.py            # Real-time monitoring
 │   │   ├── intent_detector.py    # NLP buying signal detection
+│   │   │
+│   │   ├── default_training_examples.py
+│   │   │
 │   │   └── classifier.py         # Thread classification
 │   │
 │   ├── 🕷️ web_crawlers/          # Self-adaptive crawlers

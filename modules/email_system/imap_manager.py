@@ -21,7 +21,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 
-from engine.SecureStorage import SecureStorage
+from engine.storage import SecureStorage
 from ai.nlp import NLPProcessor
 from ai.scoring import LeadScorer
 from modules.email_system.bounce_detector import BounceDetector

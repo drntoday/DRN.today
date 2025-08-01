@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 import uuid
 
-from engine.SecureStorage import SecureStorage
+from engine.storage import SecureStorage
 from ai.nlp import NLPProcessor
 
 

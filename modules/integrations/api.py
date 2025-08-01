@@ -17,7 +17,7 @@ from pydantic import BaseModel, Field, validator
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 
-from engine.SecureStorage import SecureStorage
+from engine.storage import SecureStorage
 from engine.license import LicenseManager
 from modules.lead_enrichment.tagging import DNAStyleTaggingSystem
 from modules.lead_enrichment.insights import LeadInsightsEngine

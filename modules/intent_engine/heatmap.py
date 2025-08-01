@@ -16,7 +16,7 @@ import seaborn as sns
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import MinMaxScaler
 
-from engine.SecureStorage import SecureStorage
+from engine.storage import SecureStorage
 from ai.nlp import NLPProcessor
 from ai.scoring import LeadScorer
 

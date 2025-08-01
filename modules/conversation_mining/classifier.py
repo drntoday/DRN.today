@@ -1,5 +1,3 @@
-# modules/conversation_mining/classifier.py
-
 import json
 import logging
 import pickle
@@ -17,8 +15,9 @@ from sklearn.metrics import classification_report, confusion_matrix
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import LabelEncoder
+from .default_training_examples import get_default_training_examples
 
-from engine.SecureStorage import SecureStorage
+from engine.storage import SecureStorage
 from ai.nlp import NLPProcessor
 
 
@@ -224,77 +223,7 @@ class ConversationClassifier:
 
     def _get_default_training_examples(self) -> List[Tuple[str, str]]:
         """Get default training examples for each category"""
-        return [
-            # Questions
-            ("How do I integrate this with my CRM?", "question"),
-            ("What's the best way to track conversions?", "question"),
-            ("Can anyone explain how this feature works?", "question"),
-            ("When will the new update be released?", "question"),
-            ("Where can I find documentation?", "question"),
-            
-            # Recommendation Requests
-            ("Can anyone recommend a good email marketing tool?", "recommendation_request"),
-            ("Looking for a CRM that works well with e-commerce", "recommendation_request"),
-            ("What analytics tool do you use for your startup?", "recommendation_request"),
-            ("Need suggestions for project management software", "recommendation_request"),
-            ("Anyone know of a good alternative to Salesforce?", "recommendation_request"),
-            
-            # Recommendations Given
-            ("I recommend HubSpot for marketing automation", "recommendation_given"),
-            ("You should try Mailchimp for email campaigns", "recommendation_given"),
-            ("I've had great success with Pipedrive", "recommendation_given"),
-            ("Check out Notion for project management", "recommendation_given"),
-            ("Zoho has been a great CRM for our team", "recommendation_given"),
-            
-            # Complaints
-            ("This software keeps crashing on my computer", "complaint"),
-            ("The customer support is terrible", "complaint"),
-            ("I'm frustrated with the constant bugs", "complaint"),
-            "The pricing is way too high for what you get", "complaint"),
-            ("The user interface is confusing and hard to navigate", "complaint"),
-            
-            # Praise
-            ("I love this new feature, it's exactly what I needed", "praise"),
-            ("The customer support team is amazing", "praise"),
-            ("This tool has saved me so much time", "praise"),
-            ("Best software I've used this year", "praise"),
-            ("The user interface is beautiful and intuitive", "praise"),
-            
-            # Information Sharing
-            ("Just launched our new integration with Slack", "information_sharing"),
-            ("We added a new dashboard feature yesterday", "information_sharing"),
-            ("Check out this article about marketing automation", "information_sharing"),
-            ("Did you know they just released a mobile app?", "information_sharing"),
-            ("Our team created a template for campaign tracking", "information_sharing"),
-            
-            # Buying Signals
-            ("Looking to buy a new CRM for our sales team", "buying_signal"),
-            ("We need to purchase a marketing automation tool", "buying_signal"),
-            ("What's your pricing for enterprise plans?", "buying_signal"),
-            ("Can I get a demo of your product?", "buying_signal"),
-            ("We're shopping for analytics solutions", "buying_signal"),
-            
-            # Competitor Mentions
-            ("How does this compare to Salesforce?", "competitor_mention"),
-            ("We're switching from HubSpot to this", "competitor_mention"),
-            ("Is this better than Marketo?", "competitor_mention),
-            ("We used Zoho before this", "competitor_mention"),
-            ("This seems like a good alternative to Pipedrive", "competitor_mention),
-            
-            # Problem Discussions
-            ("Struggling with lead conversion rates", "problem_discussion"),
-            ("How do you handle customer data privacy?", "problem_discussion"),
-            ("We're facing challenges with email deliverability", "problem_discussion"),
-            ("Dealing with high customer churn rates", "problem_discussion"),
-            ("How to overcome sales objections effectively?", "problem_discussion),
-            
-            # General Discussions
-            ("What do you think about the future of marketing automation?", "general_discussion"),
-            ("Anyone else excited about AI in sales tools?", "general_discussion"),
-            ("Let's discuss the best practices for lead nurturing", "general_discussion"),
-            ("Curious about your experiences with remote sales teams", "general_discussion"),
-            ("What are your thoughts on inbound vs outbound marketing?", "general_discussion)
-        ]
+        return get_default_training_examples()
 
     def _create_default_model(self):
         """Create a default model with basic keyword matching"""

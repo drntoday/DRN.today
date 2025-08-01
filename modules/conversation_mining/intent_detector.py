@@ -1,10 +1,3 @@
-#!/usr/bin/env python3
-"""
-DRN.today - Enterprise-Grade Lead Generation Platform
-Conversation Mining - Intent Detector Module
-Production-Ready Implementation
-"""
-
 import asyncio
 import logging
 import re
@@ -52,8 +45,8 @@ class DetectedIntent:
     source_type: str  # "reddit", "discord", "telegram", "forum"
     intent_type: str
     confidence: float
-    pattern_uuid: Optional[str] = None
     text: str
+    pattern_uuid: Optional[str] = None
     context: Dict[str, Any] = field(default_factory=dict)
     lead_score: float = 0.0
     urgency_level: str = "medium"  # "low", "medium", "high", "critical"

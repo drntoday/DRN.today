@@ -25,7 +25,7 @@ try:
     from modules.lead_generation.scraper import LeadScraper
     from modules.lead_enrichment.persona_stitcher import PersonaStitcher
     from modules.conversation_mining.monitor import ConversationMonitor
-    from modules.web_crawlers.crawler import AutonomousCrawler
+    from modules.web_crawlers.crawler import WebCrawler
     from modules.email_system.smtp_manager import SMTPManager
     from modules.competitive_intel.monitor import CompetitorMonitor
     from modules.intent_engine.tracker import IntentTracker

@@ -10,7 +10,7 @@ from enum import Enum
 import numpy as np
 from sklearn.preprocessing import MinMaxScaler
 
-from engine.SecureStorage import SecureStorage
+from engine.storage import SecureStorage
 from ai.nlp import NLPProcessor
 from ai.scoring import LeadScorer
 

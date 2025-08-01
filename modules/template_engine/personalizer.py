@@ -13,7 +13,7 @@ import numpy as np
 from bs4 import BeautifulSoup
 from playwright.async_api import Page, Error as PlaywrightError
 
-from engine.SecureStorage import SecureStorage
+from engine.storage import SecureStorage
 from ai.nlp import NLPProcessor
 from modules.web_crawlers.self_healing import DOMSelfHealingEngine
 
