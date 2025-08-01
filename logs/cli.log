@@ -1,0 +1,20 @@
+2025-08-01 08:04:57,889 - interface.cli.commands - ERROR - Failed to import required modules: No module named 'whois'
+2025-08-01 08:24:24,750 - interface.cli.commands - ERROR - Failed to import required modules: No module named 'dns'
+2025-08-01 08:25:58,100 - interface.cli.commands - ERROR - Failed to import required modules: No module named 'cv2'
+2025-08-01 08:28:34,023 - interface.cli.commands - ERROR - Failed to import required modules: No module named 'bs4'
+2025-08-01 08:30:41,443 - interface.cli.commands - ERROR - Failed to import required modules: No module named 'pandas'
+2025-08-01 08:37:57,130 - interface.cli.commands - ERROR - Failed to import required modules: No module named 'tldextract'
+2025-08-01 08:47:19,713 - interface.cli.commands - ERROR - Failed to import required modules: No module named 'torch'
+2025-08-01 11:00:26,780 - interface.cli.commands - ERROR - Failed to import required modules: No module named 'cv2'
+2025-08-01 11:12:51,816 - interface.cli.commands - ERROR - Failed to import required modules: No module named 'tldextract'
+2025-08-01 11:24:16,840 - interface.cli.commands - ERROR - Failed to import required modules: cannot import name 'Scraper' from 'modules.lead_generation.scraper' (C:\Users\User\Desktop\DRN.today\modules\lead_generation\scraper.py)
+2025-08-01 11:52:44,098 - interface.cli.commands - ERROR - Failed to import required modules: cannot import name 'StorageManager' from 'engine.storage' (C:\Users\User\Desktop\DRN.today\engine\storage.py)
+2025-08-01 12:07:57,031 - interface.cli.commands - ERROR - Failed to import required modules: cannot import name 'Scraper' from 'modules.lead_generation.scraper' (C:\Users\User\Desktop\DRN.today\modules\lead_generation\scraper.py)
+2025-08-01 12:11:06,783 - interface.cli.commands - ERROR - Failed to import required modules: cannot import name 'Scraper' from 'modules.lead_generation.scraper' (C:\Users\User\Desktop\DRN.today\modules\lead_generation\scraper.py)
+2025-08-01 12:17:14,018 - interface.cli.commands - ERROR - Failed to import required modules: cannot import name 'StorageManager' from 'engine.storage' (C:\Users\User\Desktop\DRN.today\engine\storage.py)
+2025-08-01 12:30:20,627 - interface.cli.commands - ERROR - Failed to import required modules: cannot import name 'Storage' from 'engine.storage' (C:\Users\User\Desktop\DRN.today\engine\storage.py)
+2025-08-01 12:51:43,215 - interface.cli.commands - ERROR - Failed to import required modules: No module named 'engine.SecureStorage'
+2025-08-01 12:55:11,805 - interface.cli.commands - ERROR - Failed to import required modules: No module named 'engine.SecureStorage'
+2025-08-01 14:03:01,460 - interface.cli.commands - ERROR - Failed to import required modules: No module named 'spacy'
+2025-08-01 15:32:09,651 - interface.cli.commands - ERROR - Failed to import required modules: No module named 'backoff'
+2025-08-01 15:42:37,644 - interface.cli.commands - ERROR - Failed to import required modules: cannot import name 'AutonomousCrawler' from 'modules.web_crawlers.crawler' (C:\Users\User\Desktop\DRN.today\modules\web_crawlers\crawler.py)
