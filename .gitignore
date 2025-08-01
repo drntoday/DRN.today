@@ -1,12 +1,34 @@
 # Virtual environments
 venv/
+.env/
 .venv/
-env/
 
 # Python cache
 __pycache__/
-*.py[cod]
-*$py.class
+*.pyc
+*.pyo
+*.pyd
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Local data
+data/
+*.db
+*.sqlite
+
+# Credentials
+*.key
+*.pem
+secrets/
+
+# AI Models (large files)
+ai/models/tinybert/*.bin
+ai/models/scikit/*.pkl
 
 # Distribution / packaging
 .Python
@@ -66,31 +88,6 @@ venv.bak/
 *.swp
 *.swo
 *~
-
-# OS
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
-
-# Logs
-*.log
-
-# Local data
-data/
-*.db
-*.sqlite
-*.sqlite3
-
-# Credentials
-*.key
-*.pem
-secrets/
-credentials/
-*.env
 
 # Temporary files
 tmp/
