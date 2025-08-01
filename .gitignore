@@ -1,41 +1,64 @@
+# ====================================
 # Virtual environments
-venv/
-.env/
+# ====================================
 .venv/
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+.Python
 
-# Python cache
+# ====================================
+# Python bytecode and cache
+# ====================================
 __pycache__/
-*.pyc
+*.py[cod]
 *.pyo
 *.pyd
 
-# OS files
+# ====================================
+# OS-specific files
+# ====================================
 .DS_Store
 Thumbs.db
 
+# ====================================
 # Logs
+# ====================================
 *.log
+pip-log.txt
+pip-delete-this-directory.txt
 
-# Local data
+# ====================================
+# Local data, databases
+# ====================================
 data/
 *.db
 *.sqlite
+tmp/
+temp/
 
-# Credentials
+# ====================================
+# Secrets / credentials
+# ====================================
 *.key
 *.pem
 secrets/
 
+# ====================================
 # AI Models (large files)
+# ====================================
 ai/models/tinybert/*.bin
 ai/models/scikit/*.pkl
 
-# Distribution / packaging
-.Python
+# ====================================
+# Build, dist, packaging
+# ====================================
 build/
-develop-eggs/
 dist/
 downloads/
+develop-eggs/
 eggs/
 .eggs/
 lib/
@@ -44,25 +67,25 @@ parts/
 sdist/
 var/
 wheels/
-pip-wheel-metadata/
 share/python-wheels/
 *.egg-info/
 .installed.cfg
 *.egg
 MANIFEST
 
+# ====================================
 # PyInstaller
-*.manifest
+# ====================================
 *.spec
+*.manifest
 
-# Installer logs
-pip-log.txt
-pip-delete-this-directory.txt
-
-# Unit test / coverage reports
-htmlcov/
+# ====================================
+# Test / coverage / tox / hypothesis
+# ====================================
 .tox/
 .nox/
+.pytest_cache/
+.hypothesis/
 .coverage
 .coverage.*
 .cache
@@ -70,25 +93,13 @@ nosetests.xml
 coverage.xml
 *.cover
 *.py,cover
-.hypothesis/
-.pytest_cache/
+htmlcov/
 
-# Environments
-.env
-.venv
-env/
-venv/
-ENV/
-env.bak/
-venv.bak/
-
-# IDE
+# ====================================
+# IDEs / Editors
+# ====================================
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
-
-# Temporary files
-tmp/
-temp/
