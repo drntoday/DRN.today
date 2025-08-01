@@ -34,7 +34,7 @@ try:
     from modules.compliance.restrictions import GeoRestrictions
     from ai.nlp import NLPProcessor
     from ai.scoring import LeadScorer
-    from engine.orchestrator import Orchestrator
+    from engine.orchestrator import SystemOrchestrator
     from engine.license import LicenseManager
 except ImportError as e:
     logger.error(f"Failed to import required modules: {e}")
@@ -49,7 +49,7 @@ class DRNCLI:
         )
         
         self.license_manager = LicenseManager()
-        self.orchestrator = Orchestrator()
+        self.orchestrator = SystemOrchestrator()
         
         self._setup_commands()
         

@@ -1,10 +1,3 @@
-#!/usr/bin/env python3
-"""
-DRN.today - Enterprise-Grade Lead Generation Platform
-Email System - SMTP Manager Module
-Production-Ready Implementation
-"""
-
 import asyncio
 import logging
 import smtplib
@@ -47,10 +40,10 @@ class SMTPAccount:
     port: int
     username: str
     password: str  # Will be stored encrypted
-    use_tls: bool = True
-    use_ssl: bool = False
     from_email: str
     from_name: str
+    use_tls: bool = True
+    use_ssl: bool = False
     reply_to: Optional[str] = None
     daily_limit: int = 1000
     hourly_limit: int = 100
@@ -64,8 +57,8 @@ class EmailMessage:
     """Email message data structure"""
     uuid: str
     to_email: str
-    to_name: Optional[str] = None
     subject: str
+    to_name: Optional[str] = None
     body_html: Optional[str] = None
     body_text: Optional[str] = None
     from_email: Optional[str] = None

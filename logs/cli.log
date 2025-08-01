@@ -18,3 +18,7 @@
 2025-08-01 14:03:01,460 - interface.cli.commands - ERROR - Failed to import required modules: No module named 'spacy'
 2025-08-01 15:32:09,651 - interface.cli.commands - ERROR - Failed to import required modules: No module named 'backoff'
 2025-08-01 15:42:37,644 - interface.cli.commands - ERROR - Failed to import required modules: cannot import name 'AutonomousCrawler' from 'modules.web_crawlers.crawler' (C:\Users\User\Desktop\DRN.today\modules\web_crawlers\crawler.py)
+2025-08-01 17:23:13,721 - interface.cli.commands - ERROR - Failed to import required modules: cannot import name 'CompetitorMonitor' from 'modules.competitive_intel.monitor' (C:\Users\User\Desktop\DRN.today\modules\competitive_intel\monitor.py)
+2025-08-01 17:49:33,663 - interface.cli.commands - ERROR - Failed to import required modules: No module named 'schedule'
+2025-08-01 17:52:47,105 - interface.cli.commands - ERROR - Failed to import required modules: cannot import name 'Orchestrator' from 'engine.orchestrator' (C:\Users\User\desktop\DRN.today\engine\orchestrator.py)
+2025-08-01 18:03:00,351 - interface.cli.commands - ERROR - Failed to import required modules: cannot import name 'EventSystem' from 'engine.event_system' (C:\Users\User\Desktop\DRN.today\engine\event_system.py)
